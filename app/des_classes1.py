@@ -60,7 +60,7 @@ class Model:
             p = Patient(self.patient_counter)
             p.department = "SDEC"
             p.priority = 0.8 # set all sdec patients as high priority
-            self.env.process(self.attend_sdec(p))
+            self.env.process(self.attend_other(p))
 
             sampled_inter = self.sdec_inter_visit_dist.sample()
             yield self.env.timeout(sampled_inter)
@@ -190,7 +190,7 @@ class Model:
                     'time' : self.env.now}
                     )
     
-    def attend_sdec(self, patient):
+    def attend_other(self, patient):
         self.event_log.append(
             {'patient' : patient.id,
              'pathway' : patient.department,
@@ -237,53 +237,6 @@ class Model:
         'time' : self.env.now}
         )
 
-    def attend_other(self, patient):
-        self.event_log.append(
-            {'patient' : patient.id,
-             'pathway' : patient.department,
-             'event_type' : 'arrival_departure',
-             'event' : 'arrival',
-             'time' : self.env.now}
-        )
-
-        self.event_log.append(
-            {'patient' : patient.id,
-             'pathway' : patient.department,
-             'event_type' : 'queue',
-             'event' : 'admission_wait_begins',
-             'time' : self.env.now}
-        )
-
-        with self.nelbed.request(priority=patient.sdec_other_priority) as req:
-            yield req
-            self.event_log.append(
-                {'patient' : patient.id,
-                'pathway' : patient.department,
-                'event_type' : 'resource_use',
-                'event' : 'admission_begins',
-                'time' : self.env.now,
-                }
-                )
-            
-            sampled_bed_time = self.mean_time_in_bed_dist.sample()
-            yield self.env.timeout(sampled_bed_time)
-
-        self.event_log.append(
-        {'patient' : patient.id,
-        'pathway' : patient.department,
-        'event_type' : 'resource_use_end',
-        'event' : 'admission_complete',
-        'time' : self.env.now}
-        )
-
-        self.event_log.append(
-        {'patient' : patient.id,
-        'pathway' : patient.department,
-        'event_type' : 'arrival_departure',
-        'event' : 'depart',
-        'time' : self.env.now}
-        )
-
     def run(self):
         self.env.process(self.generator_ed_arrivals())
         self.env.process(self.generator_sdec_arrivals())
@@ -297,6 +250,8 @@ class Trial:
     def  __init__(self):
         self.all_event_logs = []
         self.patient_df = pd.DataFrame()
+        self.patient_df_nowarmup = pd.DataFrame()
+        self.run_summary_df = pd.DataFrame()
 
     def run_trial(self):
         for run in range(g.number_of_runs):
@@ -307,7 +262,8 @@ class Trial:
             self.all_event_logs.append(event_log)
         self.all_event_logs = pd.concat(self.all_event_logs)
         self.wrangle_data()
-        return self.all_event_logs, self.patient_df
+        self.summarise_runs()
+        return self.all_event_logs, self.patient_df, self.patient_df_nowarmup, self.run_summary_df
     
     def wrangle_data(self):
         df = self.all_event_logs[["patient", "event", "time", "run", "pathway"]]
@@ -318,11 +274,38 @@ class Trial:
         df["q_time"] = df["admission_begins"] - df["admission_wait_begins"]
         df["treatment_time"] = df["admission_complete"] - df["admission_begins"]
         self.patient_df = df
+        self.patient_df_nowarmup = df[df["arrival"] > g.warm_up_period]
+
+    def summarise_runs(self):
+        run_summary = self.patient_df_nowarmup
+        run_summary = run_summary.groupby("run").agg(
+            mean_qtime=("q_time", "mean"),
+            ed_mean_qtime=("q_time",
+                            lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].mean()),
+            sd_qtime=("q_time", "std"),
+            ed_sd_qtime=("q_time",
+                            lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].std()),
+            ed_min_qtime=("q_time",
+                            lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].min()),
+            ed_max_qtime=("q_time",
+                            lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].max()),
+            ed_95=("q_time",
+                            lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].quantile(0.95)),
+            arrivals=("patient", "count"), # arrivals
+            ed_arrivals=("pathway", lambda x: (x == "ED").sum()),
+            sdec_arrivals=("pathway", lambda x: (x == "SDEC").sum()),
+            dtas=(("q_time", lambda x: (x > (12*60)).sum())),
+            ed_dtas=("q_time", lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].gt(12 * 60).sum()),
+            reneged=("renege", lambda x: x.notna().sum())
+        ).reset_index()
+        self.run_summary_df = run_summary
     
 
 #For testing
 my_trial = Trial()
 print(f"Running {g.number_of_runs} simulations......")
-all_event_logs, ecds =  my_trial.run_trial()
-display(my_trial.all_event_logs.head(1000))
-display(my_trial.patient_df.tail(1000))
+all_event_logs, patient_df, patient_df_nowarmup, run_summary_df =  my_trial.run_trial()
+# display(my_trial.all_event_logs.head(1000))
+#display(my_trial.patient_df.head(1000))
+display(my_trial.patient_df_nowarmup.head(1000))
+display(my_trial.run_summary_df)
