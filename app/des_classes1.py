@@ -2,6 +2,8 @@
 import simpy
 import pandas as pd
 from sim_tools.distributions import (Exponential, Lognormal, Uniform)
+from scipy.stats import sem, t
+import scipy.stats as stats
 
 class g: # global
     ed_inter_visit = 37.7 # see observed_edintervist notebook
@@ -252,6 +254,7 @@ class Trial:
         self.patient_df = pd.DataFrame()
         self.patient_df_nowarmup = pd.DataFrame()
         self.run_summary_df = pd.DataFrame()
+        self.trial_summary_df = pd.DataFrame()
 
     def run_trial(self):
         for run in range(g.number_of_runs):
@@ -263,7 +266,8 @@ class Trial:
         self.all_event_logs = pd.concat(self.all_event_logs)
         self.wrangle_data()
         self.summarise_runs()
-        return self.all_event_logs, self.patient_df, self.patient_df_nowarmup, self.run_summary_df
+        self.summarise_trial()
+        return self.all_event_logs, self.patient_df, self.patient_df_nowarmup, self.run_summary_df, self.trial_summary_df
     
     def wrangle_data(self):
         df = self.all_event_logs[["patient", "event", "time", "run", "pathway"]]
@@ -297,15 +301,32 @@ class Trial:
             dtas=(("q_time", lambda x: (x > (12*60)).sum())),
             ed_dtas=("q_time", lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].gt(12 * 60).sum()),
             reneged=("renege", lambda x: x.notna().sum())
-        ).reset_index()
+        )
         self.run_summary_df = run_summary
+
+    def summarise_trial(self):
+        trial_summary = self.run_summary_df
+        trial_summary = trial_summary.transpose()
+        newdf = pd.DataFrame(index=trial_summary.index)
+        newdf["mean"] = trial_summary.mean(axis=1)
+        newdf["std"] = trial_summary.std(axis=1)
+        newdf['sem'] = sem(trial_summary, axis=1, nan_policy='omit')
+        # Confidence intervals (95%) - t distribution accounts for sample size
+        confidence = 0.95
+        h = newdf['sem'] * t.ppf((1 + confidence) / 2, g.number_of_runs - 1)
+        newdf['lower_ci'] = newdf['mean'] - h
+        newdf['upper_ci'] = newdf['mean'] + h
+        newdf['min'] = trial_summary.min(axis=1)
+        newdf['max'] = trial_summary.max(axis=1)
+        self.trial_summary_df = newdf
     
 
 #For testing
-my_trial = Trial()
-print(f"Running {g.number_of_runs} simulations......")
-all_event_logs, patient_df, patient_df_nowarmup, run_summary_df =  my_trial.run_trial()
-# display(my_trial.all_event_logs.head(1000))
-#display(my_trial.patient_df.head(1000))
-display(my_trial.patient_df_nowarmup.head(1000))
-display(my_trial.run_summary_df)
+# my_trial = Trial()
+# print(f"Running {g.number_of_runs} simulations......")
+# all_event_logs, patient_df, patient_df_nowarmup, run_summary_df, trial_summary_df =  my_trial.run_trial()
+# # display(my_trial.all_event_logs.head(1000))
+# #display(my_trial.patient_df.head(1000))
+# display(my_trial.patient_df_nowarmup.head(1000))
+# display(my_trial.run_summary_df)
+# display(my_trial.trial_summary_df)
