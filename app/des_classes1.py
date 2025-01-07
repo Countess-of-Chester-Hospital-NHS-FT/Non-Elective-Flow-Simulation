@@ -282,42 +282,60 @@ class Trial:
 
     def summarise_runs(self):
         run_summary = self.patient_df_nowarmup
+        # note that q_time is na where a patient is not admitted so is automatically omitted from summary calcs
         run_summary = run_summary.groupby("run").agg(
-            mean_qtime=("q_time", "mean"),
+            total_demand=("patient", "count"),
+            ed_demand=("patient", lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].count()),
+            ed_admissions=("patient", lambda x: x[(self.patient_df_nowarmup["pathway"] == "ED") & (~pd.isna(self.patient_df_nowarmup["admission_begins"]))].count()),
+            reneged=("renege", lambda x: x.notna().sum()),
             ed_mean_qtime=("q_time",
-                            lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].mean()),
-            sd_qtime=("q_time", "std"),
+                            lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].mean() / 60.0),
             ed_sd_qtime=("q_time",
-                            lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].std()),
+                            lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].std() / 60.0),
             ed_min_qtime=("q_time",
-                            lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].min()),
+                            lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].min() / 60.0),
             ed_max_qtime=("q_time",
-                            lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].max()),
+                            lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].max() / 60.0),
             ed_95=("q_time",
-                            lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].quantile(0.95)),
-            arrivals=("patient", "count"), # arrivals
-            ed_arrivals=("pathway", lambda x: (x == "ED").sum()),
-            sdec_arrivals=("pathway", lambda x: (x == "SDEC").sum()),
-            dtas=(("q_time", lambda x: (x > (12*60)).sum())),
-            ed_dtas=("q_time", lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].gt(12 * 60).sum()),
-            reneged=("renege", lambda x: x.notna().sum())
+                            lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].quantile(0.95) / 60.0),
+            dtas_12hr=("q_time", lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].gt(12 * 60).sum()),
+            under_4hr=("q_time", lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].lt(4 * 60).sum()),
+            sdec_admissions=("pathway", lambda x: x[(self.patient_df_nowarmup["pathway"] == "SDEC") & (~pd.isna(self.patient_df_nowarmup["admission_begins"]))].count())
         )
+        run_summary["admitted_perf_4hr"]=run_summary["under_4hr"] / run_summary["ed_admissions"] #
+        run_summary["total_perf_4hr"]=run_summary["under_4hr"] / run_summary["ed_demand"]
+        run_summary=run_summary.drop(columns=["ed_demand", "under_4hr", "ed_sd_qtime"])
+        run_summary=run_summary.rename(columns={
+            'total_demand':'Total Demand',
+            'ed_admissions': 'ED Admissions',
+            'reneged': 'Reneged',
+            'ed_mean_qtime':'Mean Q Time (Hrs)',
+            'ed_min_qtime':'Min Q Time (Hrs)',
+            'ed_max_qtime':'Max Q Time (Hrs)',
+            'ed_95':'95th Percentile Q Time (Hrs)',
+            'dtas_12hr':'12hr DTAs',
+            'sdec_admissions':'SDEC Admissions',
+            'admitted_perf_4hr':'Admitted 4hr DTA Performance (%)',
+            'total_perf_4hr':'Overall 4hr DTA Performance (%)'
+        })
         self.run_summary_df = run_summary
 
     def summarise_trial(self):
         trial_summary = self.run_summary_df
         trial_summary = trial_summary.transpose()
         newdf = pd.DataFrame(index=trial_summary.index)
-        newdf["mean"] = trial_summary.mean(axis=1)
-        newdf["std"] = trial_summary.std(axis=1)
-        newdf['sem'] = sem(trial_summary, axis=1, nan_policy='omit')
-        # Confidence intervals (95%) - t distribution accounts for sample size
+        newdf.index.name = "Metric"
+        newdf["Mean"] = trial_summary.mean(axis=1)
+        newdf["St. dev"] = trial_summary.std(axis=1)
+        newdf['St. error'] = sem(trial_summary, axis=1, nan_policy='omit')
+        # Confidence intervals (95%) - t distribution method accounts for sample size
         confidence = 0.95
-        h = newdf['sem'] * t.ppf((1 + confidence) / 2, g.number_of_runs - 1)
-        newdf['lower_ci'] = newdf['mean'] - h
-        newdf['upper_ci'] = newdf['mean'] + h
-        newdf['min'] = trial_summary.min(axis=1)
-        newdf['max'] = trial_summary.max(axis=1)
+        h = newdf['St. error'] * t.ppf((1 + confidence) / 2, g.number_of_runs - 1)
+        newdf['Lower 95% CI'] = newdf['Mean'] - h
+        newdf['Upper 95% CI'] = newdf['Mean'] + h
+        newdf['Min'] = trial_summary.min(axis=1)
+        newdf['Max'] = trial_summary.max(axis=1)
+        newdf=newdf.round(2)
         self.trial_summary_df = newdf
     
 
