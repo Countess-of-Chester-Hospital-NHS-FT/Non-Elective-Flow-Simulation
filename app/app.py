@@ -50,7 +50,7 @@ with tab1:
 
     if button_run_pressed:
         with st.spinner("Simulating the system"):
-            df_trial_results, all_results_patient_level, trial_summary = Trial().run_trial()
+            all_event_logs, patient_df, patient_df_nowarmup, run_summary_df, trial_summary_df = Trial().run_trial()
             
             # Adding to session state objects so we can compare scenarios
             
@@ -68,32 +68,26 @@ with tab1:
             st.session_state['session_inputs'].append(inputs_for_state)
             
             # Comparing results
-            results_for_state = trial_summary['Mean']
+            results_for_state = trial_summary_df['Mean']
             results_for_state.name = col_name
             st.session_state['session_results'].append(results_for_state)
         
             ################
             st.write(f"You've run {st.session_state.button_click_count} scenarios")
-            st.write("These metrics are for a 60 day period and only include those patients actually admitted")
+            st.write("These metrics are for a 60 day period")
 
-            st.dataframe(trial_summary)
+            st.dataframe(trial_summary_df)
             ###################
+            
+            #filter dataset to ED
+            ed_df_nowarmup = patient_df_nowarmup[patient_df_nowarmup["pathway"] == "ED"]
 
-            #Convert wait times into hours
-            all_results_patient_level['q_time_bed_hours'] = all_results_patient_level['Q Time Bed'] / 60.0
-            all_results_patient_level['under4hrflag'] = np.where(all_results_patient_level['q_time_bed_hours'] < 4, 1, 0)
-            all_results_patient_level['dta12hrflag'] = np.where(all_results_patient_level['q_time_bed_hours'] > 12, 1, 0)
-            all_results_patient_level['q_time_bed_or_renege'] = all_results_patient_level['Q Time Bed|Renege'] / 60.0
-            
-            #value = trial_summary.loc["Mean Q Time (Hrs)", "Mean"]
-            #label = f'Mean Q Time: {round(trial_summary.loc["Mean Q Time (Hrs)", "Mean"])} hrs'
-            
             #Create the histogram
             fig = plt.figure(figsize=(8, 6))
             sns.histplot(
-            all_results_patient_level['q_time_bed_hours'], 
-            bins=range(int(all_results_patient_level['q_time_bed_hours'].min()), 
-                    int(all_results_patient_level['q_time_bed_hours'].max()) + 1, 1), 
+            ed_df_nowarmup['q_time_hrs'], 
+            bins=range(int(ed_df_nowarmup['q_time_hrs'].min()), 
+                    int(ed_df_nowarmup['q_time_hrs'].max()) + 1, 1), 
             kde=False)
 
             # # Set the boundary for the bins to start at 0
@@ -101,11 +95,11 @@ with tab1:
 
             # Add vertical lines with labels
             lines = [
-                {"x": trial_summary.loc["Mean Q Time (Hrs)", "Mean"], "color": "tomato", "label": f'Mean Q Time: {round(trial_summary.loc["Mean Q Time (Hrs)", "Mean"])} hrs'},
-                {"x": 4, "color": "mediumturquoise", "label": f'4 Hr DTA Performance: {round(trial_summary.loc["4hr DTA Performance (%)", "Mean"])}%'},
-                {"x": 12, "color": "royalblue", "label": f'12 Hr DTAs per day: {round(trial_summary.loc["12hr DTAs", "Mean"])} hrs'},
-                {"x": trial_summary.loc["95th Percentile Q", "Mean"], "color": "goldenrod", "label": f'95th Percentile Q Time: {round(trial_summary.loc["95th Percentile Q", "Mean"])} hrs'},
-                {"x": trial_summary.loc["Max Q Time (Hrs)", "Mean"], "color": "slategrey", "label": f'Max Q Time: {round(trial_summary.loc["Max Q Time (Hrs)", "Mean"])} hrs'},
+                {"x": trial_summary_df.loc["Mean Q Time (Hrs)", "Mean"], "color": "tomato", "label": f'Mean Q Time: {round(trial_summary_df.loc["Mean Q Time (Hrs)", "Mean"])} hrs'},
+                {"x": 4, "color": "mediumturquoise", "label": f'4 Hr DTA Performance: {round(trial_summary_df.loc["Admitted 4hr DTA Performance (%)", "Mean"])}%'},
+                {"x": 12, "color": "royalblue", "label": f'12 Hr DTAs per day: {round(trial_summary_df.loc["12hr DTAs (per day)", "Mean"])}'},
+                {"x": trial_summary_df.loc["95th Percentile Q Time (Hrs)", "Mean"], "color": "goldenrod", "label": f'95th Percentile Q Time: {round(trial_summary_df.loc["95th Percentile Q Time (Hrs)", "Mean"])} hrs'},
+                {"x": trial_summary_df.loc["Max Q Time (Hrs)", "Mean"], "color": "slategrey", "label": f'Max Q Time: {round(trial_summary_df.loc["Max Q Time (Hrs)", "Mean"])} hrs'},
             ]
 
             for line in lines:
@@ -119,12 +113,12 @@ with tab1:
 
             # Add transparent rectangles for confidence intervals
             ci_ranges = [
-                {"lower": trial_summary.loc["Mean Q Time (Hrs)", "Lower 95% CI"], 
-                "upper": trial_summary.loc["Mean Q Time (Hrs)", "Upper 95% CI"], "color": "tomato"},
-                {"lower": trial_summary.loc["95th Percentile Q", "Lower 95% CI"], 
-                "upper": trial_summary.loc["95th Percentile Q", "Upper 95% CI"], "color": "goldenrod"},
-                {"lower": trial_summary.loc["Max Q Time (Hrs)", "Lower 95% CI"], 
-                "upper": trial_summary.loc["Max Q Time (Hrs)", "Upper 95% CI"], "color": "slategrey"},
+                {"lower": trial_summary_df.loc["Mean Q Time (Hrs)", "Lower 95% CI"], 
+                "upper": trial_summary_df.loc["Mean Q Time (Hrs)", "Upper 95% CI"], "color": "tomato"},
+                {"lower": trial_summary_df.loc["95th Percentile Q Time (Hrs)", "Lower 95% CI"], 
+                "upper": trial_summary_df.loc["95th Percentile Q Time (Hrs)", "Upper 95% CI"], "color": "goldenrod"},
+                {"lower": trial_summary_df.loc["Max Q Time (Hrs)", "Lower 95% CI"], 
+                "upper": trial_summary_df.loc["Max Q Time (Hrs)", "Upper 95% CI"], "color": "slategrey"},
             ]
 
             for ci in ci_ranges:
