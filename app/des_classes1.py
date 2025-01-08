@@ -276,6 +276,7 @@ class Trial:
                 .rename_axis(None,axis=1))
         df["total_los"] = df["depart"] - df["arrival"]
         df["q_time"] = df["admission_begins"] - df["admission_wait_begins"]
+        df["q_time_hrs"] = df["q_time"] / 60.0
         df["treatment_time"] = df["admission_complete"] - df["admission_begins"]
         self.patient_df = df
         self.patient_df_nowarmup = df[df["arrival"] > g.warm_up_period]
@@ -298,12 +299,12 @@ class Trial:
                             lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].max() / 60.0),
             ed_95=("q_time",
                             lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].quantile(0.95) / 60.0),
-            dtas_12hr=("q_time", lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].gt(12 * 60).sum()),
+            dtas_12hr=("q_time", lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].gt(12 * 60).sum() / (g.sim_duration/1440)),
             under_4hr=("q_time", lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].lt(4 * 60).sum()),
             sdec_admissions=("pathway", lambda x: x[(self.patient_df_nowarmup["pathway"] == "SDEC") & (~pd.isna(self.patient_df_nowarmup["admission_begins"]))].count())
         )
-        run_summary["admitted_perf_4hr"]=run_summary["under_4hr"] / run_summary["ed_admissions"] #
-        run_summary["total_perf_4hr"]=run_summary["under_4hr"] / run_summary["ed_demand"]
+        run_summary["admitted_perf_4hr"]=(run_summary["under_4hr"] / run_summary["ed_admissions"])*100 #
+        run_summary["total_perf_4hr"]=(run_summary["under_4hr"] / run_summary["ed_demand"])*100
         run_summary=run_summary.drop(columns=["ed_demand", "under_4hr", "ed_sd_qtime"])
         run_summary=run_summary.rename(columns={
             'total_demand':'Total Demand',
@@ -313,7 +314,7 @@ class Trial:
             'ed_min_qtime':'Min Q Time (Hrs)',
             'ed_max_qtime':'Max Q Time (Hrs)',
             'ed_95':'95th Percentile Q Time (Hrs)',
-            'dtas_12hr':'12hr DTAs',
+            'dtas_12hr':'12hr DTAs (per day)',
             'sdec_admissions':'SDEC Admissions',
             'admitted_perf_4hr':'Admitted 4hr DTA Performance (%)',
             'total_perf_4hr':'Overall 4hr DTA Performance (%)'

@@ -20,7 +20,7 @@ g.number_of_runs = 10
 all_event_logs, patient_df, patient_df_nowarmup, run_summary_df, trial_summary_df = Trial().run_trial()
 
 #display(all_event_logs.head(1000))
-#display(patient_df.head(1000))
+display(patient_df.tail(1000))
 display(run_summary_df.head(100))
 display(trial_summary_df.head(100))
 
