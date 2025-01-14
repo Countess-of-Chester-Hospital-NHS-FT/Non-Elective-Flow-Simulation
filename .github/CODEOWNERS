@@ -1,0 +1,9 @@
+# See the github docs on codeowners https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners#about-code-owners
+
+
+# These owners will be the default owners for everything in
+# the repo. Unless a later match takes precedence,
+# @helenajr will be requested for
+# review when someone opens a pull request.
+*       @helenajr 
+
