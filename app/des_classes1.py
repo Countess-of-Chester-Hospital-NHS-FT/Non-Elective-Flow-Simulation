@@ -33,8 +33,8 @@ class Model:
         self.patient_counter = 0
         #self.nelbed = simpy.PriorityResource(
             #self.env, capacity=g.number_of_nelbeds)
-        self.init_resources()
         self.run_number = run_number
+        self.init_resources()
 
     def init_resources(self):
         self.nelbed = VidigiPriorityStore(self.env)
@@ -116,7 +116,7 @@ class Model:
                 'pathway' : patient.department,
                 'event_type' : 'resource_use',
                 'event' : 'admission_begins',
-                'time' : self.env.now,
+                'time' : self.env.now
                 }
                 )
                 
@@ -128,7 +128,8 @@ class Model:
                 'pathway' : patient.department,
                 'event_type' : 'resource_use_end',
                 'event' : 'admission_complete',
-                'time' : self.env.now}
+                'time' : self.env.now
+                }
                 )
 
                 self.event_log.append(
@@ -224,7 +225,7 @@ class Model:
                 'pathway' : patient.department,
                 'event_type' : 'resource_use',
                 'event' : 'admission_begins',
-                'time' : self.env.now,
+                'time' : self.env.now
                 }
                 )
             
@@ -236,7 +237,8 @@ class Model:
         'pathway' : patient.department,
         'event_type' : 'resource_use_end',
         'event' : 'admission_complete',
-        'time' : self.env.now}
+        'time' : self.env.now
+        }
         )
 
         self.event_log.append(
