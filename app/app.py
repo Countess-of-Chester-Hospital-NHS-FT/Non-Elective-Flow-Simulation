@@ -16,6 +16,7 @@ if 'session_inputs' not in st.session_state:
     st.session_state['session_inputs'] = []
 
 st.title("Non-Elective Flow Simulation")
+st.header("(work in progress)")
 
 with st.sidebar:
     mean_los_slider = st.slider("Adjust the mean los in hours",

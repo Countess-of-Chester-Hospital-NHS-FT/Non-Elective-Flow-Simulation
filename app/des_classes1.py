@@ -4,6 +4,7 @@ import pandas as pd
 from sim_tools.distributions import (Exponential, Lognormal, Uniform)
 from scipy.stats import sem, t
 import scipy.stats as stats
+from vidigi.utils import VidigiPriorityStore, populate_store
 
 class g: # global
     ed_inter_visit = 37.7 # see observed_edintervist notebook
@@ -30,9 +31,16 @@ class Model:
         self.env = simpy.Environment()
         self.event_log = []
         self.patient_counter = 0
-        self.nelbed = simpy.PriorityResource(
-            self.env, capacity=g.number_of_nelbeds)
+        #self.nelbed = simpy.PriorityResource(
+            #self.env, capacity=g.number_of_nelbeds)
+        self.init_resources()
         self.run_number = run_number
+
+    def init_resources(self):
+        self.nelbed = VidigiPriorityStore(self.env)
+        populate_store(num_resources=g.number_of_nelbeds,
+                       simpy_store=self.nelbed,
+                       sim_env=self.env)
 
         # Initialise distributions for generators
         self.ed_inter_visit_dist = Exponential(mean = g.ed_inter_visit, random_seed = self.run_number*2)
@@ -95,7 +103,7 @@ class Model:
              'time' : self.env.now}
         )
 
-        with self.nelbed.request(priority=patient.priority) as req:
+        with self.nelbed.get(priority=patient.priority) as req:
             # Wait until one of 3 things happens....
             result_of_queue = (yield req | # they get a bed
                                self.env.timeout(patient.renege_time) | # they renege
@@ -143,7 +151,7 @@ class Model:
                 }
                 )
                 # Make another bed request with new priority
-                with self.nelbed.request(priority=patient.priority) as req:
+                with self.nelbed.get(priority=patient.priority) as req:
                     yield req
                     self.event_log.append(
                     {'patient' : patient.id,
@@ -209,7 +217,7 @@ class Model:
              'time' : self.env.now}
         )
 
-        with self.nelbed.request(priority=patient.priority) as req:
+        with self.nelbed.get(priority=patient.priority) as req:
             yield req
             self.event_log.append(
                 {'patient' : patient.id,
