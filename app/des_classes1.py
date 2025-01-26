@@ -102,16 +102,16 @@ class Model:
              'time' : self.env.now}
         )
 
-        if patient.id % 50 != 0:
-            bed_resource = yield self.nelbed.get(priority=patient.priority)
+        #if patient.id % 50 != 0:
+        bed_resource = self.nelbed.get(priority=patient.priority)
             #with self.nelbed.get(priority=patient.priority) as req:
                 # Wait until one of 3 things happens....
-            #result_of_queue = (get_bed | # they get a bed
-                                #self.env.timeout(patient.renege_time) | # they renege
-                                #self.env.timeout(patient.priority_update)) # they become higher priority
+        result_of_queue = (yield bed_resource | # they get a bed
+                            self.env.timeout(patient.renege_time)) #| # they renege
+                            #self.env.timeout(patient.priority_update)) # they become higher priority
 
                 # if the result is they get a bed, record the relevant details
-            #if get_bed in result_of_queue:
+        if bed_resource in result_of_queue:
             self.event_log.append(
             {'patient' : patient.id,
             'pathway' : patient.department,
