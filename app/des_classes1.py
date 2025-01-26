@@ -31,17 +31,9 @@ class Model:
         self.env = simpy.Environment()
         self.event_log = []
         self.patient_counter = 0
-        self.nelbed = simpy.PriorityResource(
-            self.env, capacity=g.number_of_nelbeds)
+        #self.nelbed = simpy.PriorityResource(
+            #self.env, capacity=g.number_of_nelbeds)
         self.run_number = run_number
-        #self.init_resources()
-
-    #def init_resources(self):
-        #self.nelbed = VidigiPriorityStore(self.env)
-        #populate_store(num_resources=g.number_of_nelbeds,
-                       #simpy_store=self.nelbed,
-                       #sim_env=self.env)
-
         # Initialise distributions for generators
         self.ed_inter_visit_dist = Exponential(mean = g.ed_inter_visit, random_seed = self.run_number*2)
         self.sdec_inter_visit_dist = Exponential(mean = g.sdec_inter_visit, random_seed = self.run_number*3)
@@ -50,6 +42,13 @@ class Model:
         self.renege_time = Uniform(0, 9000, random_seed = self.run_number*6)
         self.priority_update = Uniform(0, 9000, random_seed = self.run_number*7)
         self.priority = Uniform(1,2, random_seed = self.run_number*8)
+        self.init_resources()
+
+    def init_resources(self):
+        self.nelbed = VidigiPriorityStore(self.env)
+        populate_store(num_resources=g.number_of_nelbeds,
+                       simpy_store=self.nelbed,
+                       sim_env=self.env)
     
     def generator_ed_arrivals(self): #ed patients
         while True:
@@ -103,103 +102,108 @@ class Model:
              'time' : self.env.now}
         )
 
-        with self.nelbed.request(priority=patient.priority) as req:
-            # Wait until one of 3 things happens....
-            result_of_queue = (yield req | # they get a bed
-                               self.env.timeout(patient.renege_time) | # they renege
-                               self.env.timeout(patient.priority_update)) # they become higher priority
+        if patient.id % 50 != 0:
+            bed_resource = yield self.nelbed.get(priority=patient.priority)
+            #with self.nelbed.get(priority=patient.priority) as req:
+                # Wait until one of 3 things happens....
+            #result_of_queue = (get_bed | # they get a bed
+                                #self.env.timeout(patient.renege_time) | # they renege
+                                #self.env.timeout(patient.priority_update)) # they become higher priority
 
-            # if the result is they get a bed, record the relevant details
-            if req in result_of_queue:
-                self.event_log.append(
+                # if the result is they get a bed, record the relevant details
+            #if get_bed in result_of_queue:
+            self.event_log.append(
+            {'patient' : patient.id,
+            'pathway' : patient.department,
+            'event_type' : 'resource_use',
+            'event' : 'admission_begins',
+            'time' : self.env.now
+            }
+            )
+                    
+            sampled_bed_time = self.mean_time_in_bed_dist.sample()
+            yield self.env.timeout(sampled_bed_time)
+
+            self.event_log.append(
+            {'patient' : patient.id,
+            'pathway' : patient.department,
+            'event_type' : 'resource_use_end',
+            'event' : 'admission_complete',
+            'time' : self.env.now
+            }
+            )
+
+            self.nelbed.put(bed_resource)
+
+            self.event_log.append(
+            {'patient' : patient.id,
+            'pathway' : patient.department,
+            'event_type' : 'arrival_departure',
+            'event' : 'depart',
+            'time' : self.env.now}
+            )
+            
+            # If the result of the queue was increase of priority
+        # elif patient.priority_update < patient.renege_time:
+        #     patient.priority = patient.priority - 2.2 #arbitrary priority increase
+        #     self.event_log.append(
+        #     {'patient' : patient.id,
+        #     'pathway' : patient.department,
+        #     'event_type' : 'other',
+        #     'event' : 'priority_increase',
+        #     'time' : self.env.now,
+        #     }
+        #     )
+        #     # Make another bed request with new priority
+        #     get_bed
+        #     #with self.nelbed.get(priority=patient.priority) as req:
+        #         #yield req
+        #     self.event_log.append(
+        #     {'patient' : patient.id,
+        #     'pathway' : patient.department,
+        #     'event_type' : 'resource_use',
+        #     'event' : 'admission_begins',
+        #     'time' : self.env.now,
+        #     }
+        #     )
+            
+        #     sampled_bed_time = self.mean_time_in_bed_dist.sample()
+        #     yield self.env.timeout(sampled_bed_time)
+
+        #     self.event_log.append(
+        #     {'patient' : patient.id,
+        #     'pathway' : patient.department,
+        #     'event_type' : 'resource_use_end',
+        #     'event' : 'admission_complete',
+        #     'time' : self.env.now}
+        #     )
+
+        #     self.event_log.append(
+        #     {'patient' : patient.id,
+        #     'pathway' : patient.department,
+        #     'event_type' : 'arrival_departure',
+        #     'event' : 'depart',
+        #     'time' : self.env.now}
+        #     )
+            
+        # # If patient reneges
+        else:
+            self.event_log.append(
                 {'patient' : patient.id,
                 'pathway' : patient.department,
-                'event_type' : 'resource_use',
-                'event' : 'admission_begins',
-                'time' : self.env.now
+                'event_type' : 'other',
+                'event' : 'renege',
+                'time' : self.env.now,
                 }
                 )
-                
-                sampled_bed_time = self.mean_time_in_bed_dist.sample()
-                yield self.env.timeout(sampled_bed_time)
-
-                self.event_log.append(
-                {'patient' : patient.id,
-                'pathway' : patient.department,
-                'event_type' : 'resource_use_end',
-                'event' : 'admission_complete',
-                'time' : self.env.now
-                }
-                )
-
-                self.event_log.append(
+            
+            self.event_log.append(
                 {'patient' : patient.id,
                 'pathway' : patient.department,
                 'event_type' : 'arrival_departure',
                 'event' : 'depart',
                 'time' : self.env.now}
                 )
-            
-            # If the result of the queue was increase of priority
-            elif patient.priority_update < patient.renege_time:
-                patient.priority = patient.priority - 2.2 #arbitrary deterioration
-                self.event_log.append(
-                {'patient' : patient.id,
-                'pathway' : patient.department,
-                'event_type' : 'other',
-                'event' : 'priority_increase',
-                'time' : self.env.now,
-                }
-                )
-                # Make another bed request with new priority
-                with self.nelbed.request(priority=patient.priority) as req:
-                    yield req
-                    self.event_log.append(
-                    {'patient' : patient.id,
-                    'pathway' : patient.department,
-                    'event_type' : 'resource_use',
-                    'event' : 'admission_begins',
-                    'time' : self.env.now,
-                    }
-                    )
-                
-                    sampled_bed_time = self.mean_time_in_bed_dist.sample()
-                    yield self.env.timeout(sampled_bed_time)
-
-                    self.event_log.append(
-                    {'patient' : patient.id,
-                    'pathway' : patient.department,
-                    'event_type' : 'resource_use_end',
-                    'event' : 'admission_complete',
-                    'time' : self.env.now}
-                    )
-
-                    self.event_log.append(
-                    {'patient' : patient.id,
-                    'pathway' : patient.department,
-                    'event_type' : 'arrival_departure',
-                    'event' : 'depart',
-                    'time' : self.env.now}
-                    )
-            
-            # If patient reneges
-            else:
-                self.event_log.append(
-                    {'patient' : patient.id,
-                    'pathway' : patient.department,
-                    'event_type' : 'other',
-                    'event' : 'renege',
-                    'time' : self.env.now,
-                    }
-                    )
-                
-                self.event_log.append(
-                    {'patient' : patient.id,
-                    'pathway' : patient.department,
-                    'event_type' : 'arrival_departure',
-                    'event' : 'depart',
-                    'time' : self.env.now}
-                    )
     
     def attend_other(self, patient):
         self.event_log.append(
@@ -218,19 +222,21 @@ class Model:
              'time' : self.env.now}
         )
 
-        with self.nelbed.request(priority=patient.priority) as req:
-            yield req
-            self.event_log.append(
-                {'patient' : patient.id,
-                'pathway' : patient.department,
-                'event_type' : 'resource_use',
-                'event' : 'admission_begins',
-                'time' : self.env.now
-                }
-                )
-            
-            sampled_bed_time = self.mean_time_in_bed_dist.sample()
-            yield self.env.timeout(sampled_bed_time)
+        #with self.nelbed.get(priority=patient.priority) as req:
+            #yield req
+        bed_resource = yield self.nelbed.get(priority=patient.priority)
+
+        self.event_log.append(
+            {'patient' : patient.id,
+            'pathway' : patient.department,
+            'event_type' : 'resource_use',
+            'event' : 'admission_begins',
+            'time' : self.env.now
+            }
+            )
+        
+        sampled_bed_time = self.mean_time_in_bed_dist.sample()
+        yield self.env.timeout(sampled_bed_time)
 
         self.event_log.append(
         {'patient' : patient.id,
@@ -240,6 +246,8 @@ class Model:
         'time' : self.env.now
         }
         )
+
+        self.nelbed.put(bed_resource)
 
         self.event_log.append(
         {'patient' : patient.id,
