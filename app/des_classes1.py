@@ -114,7 +114,8 @@ class Model:
             'pathway' : patient.department,
             'event_type' : 'resource_use',
             'event' : 'admission_begins',
-            'time' : self.env.now
+            'time' : self.env.now,
+            'resource_id' : bed_resource.id_attribute
             }
             )
                     
@@ -126,7 +127,8 @@ class Model:
             'pathway' : patient.department,
             'event_type' : 'resource_use_end',
             'event' : 'admission_complete',
-            'time' : self.env.now
+            'time' : self.env.now,
+            'resource_id' : bed_resource.id_attribute
             }
             )
 
@@ -152,6 +154,7 @@ class Model:
             'event_type' : 'resource_use',
             'event' : 'admission_begins',
             'time' : self.env.now,
+            'resource_id' : bed_resource_new.id_attribute
             }
             )
             
@@ -165,7 +168,9 @@ class Model:
             'pathway' : patient.department,
             'event_type' : 'resource_use_end',
             'event' : 'admission_complete',
-            'time' : self.env.now}
+            'time' : self.env.now,
+            'resource_id' : bed_resource_new.id_attribute
+            }
             )
         
     # # If patient reneges
@@ -212,7 +217,8 @@ class Model:
             'pathway' : patient.department,
             'event_type' : 'resource_use',
             'event' : 'admission_begins',
-            'time' : self.env.now
+            'time' : self.env.now,
+            'resource_id' : bed_resource.id_attribute
             }
             )
         
@@ -224,7 +230,8 @@ class Model:
         'pathway' : patient.department,
         'event_type' : 'resource_use_end',
         'event' : 'admission_complete',
-        'time' : self.env.now
+        'time' : self.env.now,
+        'resource_id' : bed_resource.id_attribute
         }
         )
 
