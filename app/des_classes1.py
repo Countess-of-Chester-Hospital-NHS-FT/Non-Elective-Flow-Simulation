@@ -108,6 +108,10 @@ class Model:
                             self.env.timeout(patient.renege_time)| # they renege
                             self.env.timeout(patient.priority_update)) # they become higher priority
 
+        #print(f"{patient.id}: {result_of_queue}")
+        #print(f"{patient.id}: {bed_resource}")
+        #print(f"{patient.id}: ID attribute of resource is {result_of_queue[bed_resource].id_attribute}")
+
         if bed_resource in result_of_queue:
             self.event_log.append(
             {'patient' : patient.id,
@@ -115,9 +119,13 @@ class Model:
             'event_type' : 'resource_use',
             'event' : 'admission_begins',
             'time' : self.env.now,
-            'resource_id' : bed_resource.id_attribute
+            #'resource_id' : bed_resource.id_attribute
             }
             )
+
+            #print(f"{patient.id}: {result_of_queue}")
+            #print(f"{patient.id}: {bed_resource}")
+            #print(f"{patient.id}: ID attribute of resource is {result_of_queue[bed_resource].id_attribute}")
                     
             sampled_bed_time = self.mean_time_in_bed_dist.sample()
             yield self.env.timeout(sampled_bed_time)
@@ -128,7 +136,7 @@ class Model:
             'event_type' : 'resource_use_end',
             'event' : 'admission_complete',
             'time' : self.env.now,
-            'resource_id' : bed_resource.id_attribute
+            #'resource_id' : bed_resource.id_attribute
             }
             )
 
@@ -154,7 +162,7 @@ class Model:
             'event_type' : 'resource_use',
             'event' : 'admission_begins',
             'time' : self.env.now,
-            'resource_id' : bed_resource_new.id_attribute
+            #'resource_id' : bed_resource_new.id_attribute
             }
             )
             
@@ -169,7 +177,7 @@ class Model:
             'event_type' : 'resource_use_end',
             'event' : 'admission_complete',
             'time' : self.env.now,
-            'resource_id' : bed_resource_new.id_attribute
+            #'resource_id' : bed_resource_new.id_attribute
             }
             )
         
@@ -218,7 +226,7 @@ class Model:
             'event_type' : 'resource_use',
             'event' : 'admission_begins',
             'time' : self.env.now,
-            'resource_id' : bed_resource.id_attribute
+            #'resource_id' : bed_resource.id_attribute
             }
             )
         
@@ -231,7 +239,7 @@ class Model:
         'event_type' : 'resource_use_end',
         'event' : 'admission_complete',
         'time' : self.env.now,
-        'resource_id' : bed_resource.id_attribute
+        #'resource_id' : bed_resource.id_attribute
         }
         )
 
