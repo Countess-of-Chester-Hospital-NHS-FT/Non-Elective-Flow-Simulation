@@ -205,32 +205,30 @@ class Model:
              'time' : self.env.now}
         )
 
-        #bed_resource = yield self.nelbed.get(priority=patient.priority)
-        with self.nelbed.get(priority=patient.priority) as bed_resource:
-            yield bed_resource
+        bed_resource = yield self.nelbed.get(priority=patient.priority)
 
-            self.event_log.append(
-                {'patient' : patient.id,
-                'pathway' : patient.department,
-                'event_type' : 'resource_use',
-                'event' : 'admission_begins',
-                'time' : self.env.now
-                }
-                )
-            
-            sampled_bed_time = self.mean_time_in_bed_dist.sample()
-            yield self.env.timeout(sampled_bed_time)
-
-            self.event_log.append(
+        self.event_log.append(
             {'patient' : patient.id,
             'pathway' : patient.department,
-            'event_type' : 'resource_use_end',
-            'event' : 'admission_complete',
+            'event_type' : 'resource_use',
+            'event' : 'admission_begins',
             'time' : self.env.now
             }
             )
+        
+        sampled_bed_time = self.mean_time_in_bed_dist.sample()
+        yield self.env.timeout(sampled_bed_time)
 
-            self.nelbed.put(bed_resource)
+        self.event_log.append(
+        {'patient' : patient.id,
+        'pathway' : patient.department,
+        'event_type' : 'resource_use_end',
+        'event' : 'admission_complete',
+        'time' : self.env.now
+        }
+        )
+
+        self.nelbed.put(bed_resource)
 
         self.event_log.append(
         {'patient' : patient.id,
