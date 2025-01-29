@@ -134,6 +134,7 @@ class Model:
             
         # If the result of the queue was increase of priority
         elif patient.priority_update < patient.renege_time:
+            bed_resource.cancel() # SR - Think we need to ensure original request is cancelled at this point
             patient.priority = patient.priority - 2.2 #arbitrary priority increase
             self.event_log.append(
             {'patient' : patient.id,
@@ -144,7 +145,7 @@ class Model:
             }
             )
         #     # Make another bed request with new priority
-            bed_resource = yield self.nelbed.get(priority=patient.priority)
+            bed_resource_new = yield self.nelbed.get(priority=patient.priority)
             self.event_log.append(
             {'patient' : patient.id,
             'pathway' : patient.department,
@@ -157,6 +158,8 @@ class Model:
             sampled_bed_time = self.mean_time_in_bed_dist.sample()
             yield self.env.timeout(sampled_bed_time)
 
+            self.nelbed.put(bed_resource_new)
+
             self.event_log.append(
             {'patient' : patient.id,
             'pathway' : patient.department,
@@ -164,11 +167,10 @@ class Model:
             'event' : 'admission_complete',
             'time' : self.env.now}
             )
-
-            self.nelbed.put(bed_resource)
         
     # # If patient reneges
         else:
+            bed_resource.cancel() # SR - Think we need to ensure original request is cancelled at this point
             self.event_log.append(
                 {'patient' : patient.id,
                 'pathway' : patient.department,
