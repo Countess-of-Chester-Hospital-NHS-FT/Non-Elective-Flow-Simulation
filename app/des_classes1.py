@@ -119,7 +119,7 @@ class Model:
             'event_type' : 'resource_use',
             'event' : 'admission_begins',
             'time' : self.env.now,
-            #'resource_id' : bed_resource.id_attribute
+            'resource_id' : result_of_queue[bed_resource].id_attribute
             }
             )
 
@@ -136,11 +136,11 @@ class Model:
             'event_type' : 'resource_use_end',
             'event' : 'admission_complete',
             'time' : self.env.now,
-            #'resource_id' : bed_resource.id_attribute
+            'resource_id' : result_of_queue[bed_resource].id_attribute
             }
             )
 
-            self.nelbed.put(bed_resource)
+            self.nelbed.put(result_of_queue[bed_resource])
             
         # If the result of the queue was increase of priority
         elif patient.priority_update < patient.renege_time:
@@ -162,7 +162,7 @@ class Model:
             'event_type' : 'resource_use',
             'event' : 'admission_begins',
             'time' : self.env.now,
-            #'resource_id' : bed_resource_new.id_attribute
+            'resource_id' : bed_resource_new.id_attribute
             }
             )
             
@@ -177,7 +177,7 @@ class Model:
             'event_type' : 'resource_use_end',
             'event' : 'admission_complete',
             'time' : self.env.now,
-            #'resource_id' : bed_resource_new.id_attribute
+            'resource_id' : bed_resource_new.id_attribute
             }
             )
         
@@ -226,7 +226,7 @@ class Model:
             'event_type' : 'resource_use',
             'event' : 'admission_begins',
             'time' : self.env.now,
-            #'resource_id' : bed_resource.id_attribute
+            'resource_id' : bed_resource.id_attribute
             }
             )
         
@@ -239,7 +239,7 @@ class Model:
         'event_type' : 'resource_use_end',
         'event' : 'admission_complete',
         'time' : self.env.now,
-        #'resource_id' : bed_resource.id_attribute
+        'resource_id' : bed_resource.id_attribute
         }
         )
 
