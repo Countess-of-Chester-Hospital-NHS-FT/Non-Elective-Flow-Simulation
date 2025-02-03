@@ -108,10 +108,6 @@ class Model:
                             self.env.timeout(patient.renege_time)| # they renege
                             self.env.timeout(patient.priority_update)) # they become higher priority
 
-        #print(f"{patient.id}: {result_of_queue}")
-        #print(f"{patient.id}: {bed_resource}")
-        #print(f"{patient.id}: ID attribute of resource is {result_of_queue[bed_resource].id_attribute}")
-
         if bed_resource in result_of_queue:
             self.event_log.append(
             {'patient' : patient.id,
@@ -122,10 +118,6 @@ class Model:
             'resource_id' : result_of_queue[bed_resource].id_attribute
             }
             )
-
-            #print(f"{patient.id}: {result_of_queue}")
-            #print(f"{patient.id}: {bed_resource}")
-            #print(f"{patient.id}: ID attribute of resource is {result_of_queue[bed_resource].id_attribute}")
                     
             sampled_bed_time = self.mean_time_in_bed_dist.sample()
             yield self.env.timeout(sampled_bed_time)

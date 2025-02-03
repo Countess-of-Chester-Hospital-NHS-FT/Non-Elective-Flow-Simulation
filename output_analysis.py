@@ -32,16 +32,13 @@ display(trial_summary_df.head(100))
 #####Number of beds occupied
 
 minutes = pd.Series(range(0, g.sim_duration + g.warm_up_period))
-#print(minutes)
 
 run0_df = patient_df[patient_df['run'] == 0]
 beds = ((run0_df["admission_begins"].values[:, None] < minutes.values) &
         ((run0_df["admission_complete"].values[:, None] > minutes.values) |
          run0_df["admission_complete"].isna().values[:, None])).sum(axis=0)
-#print(beds)
 
 beds_df = pd.DataFrame({"minutes": minutes, "beds": beds})
-#print(beds_df)
 
 fig = px.line(beds_df, x = "minutes", y = "beds")
 
