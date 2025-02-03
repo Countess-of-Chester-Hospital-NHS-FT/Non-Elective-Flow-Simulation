@@ -56,17 +56,111 @@ display(all_event_logs.tail(1000))
 
 ############ANIMATION#################################################
 print(all_event_logs['event_type'].unique())
-filtered_logs = all_event_logs[(all_event_logs['event_type'] != 'other') & 
-                               (all_event_logs['pathway'] == 'ED')]
+filtered_logs = all_event_logs[all_event_logs['event_type'] != 'other']# & 
+                               #(all_event_logs['time'] > 100000) &
+                               #(all_event_logs['time'] < 102000)]
+
 filtered_logs.head()
 
-STEP_SNAPSHOT_MAX = 45
-LIMIT_DURATION = 5000
+# STEP_SNAPSHOT_MAX = 45
+# LIMIT_DURATION = 5000
+# WRAP_QUEUES_AT = 15
+
+# reshaped_logs = reshape_for_animations(
+#     event_log=filtered_logs[filtered_logs['run']==0],
+#     every_x_time_units=2,
+#     step_snapshot_max=STEP_SNAPSHOT_MAX,
+#     limit_duration=LIMIT_DURATION,
+#     debug_mode=True
+#     )
+
+# reshaped_logs.head(15)
+
+# event_position_df = pd.DataFrame([
+#                     {'event': 'arrival',
+#                      'x':  5, 'y': 1250,
+#                      'label': "Arrival" },
+
+#                     {'event': 'admission_wait_begins',
+#                      'x':  285, 'y': 790,
+#                      'label': "Waiting for Admission"},
+
+#                     {'event': 'admission_begins',
+#                      'x':  285, 'y': 130,
+#                      'resource':'number_of_nelbeds',
+#                      'label': "Admitted"},
+
+#                     {'event': 'exit',
+#                      'x':  320, 'y': 30,
+#                      'label': "Exit"}
+
+#                 ])
+
+# position_logs = generate_animation_df(full_patient_df=reshaped_logs,
+#                                                  event_position_df=event_position_df,
+#                                                  wrap_queues_at=WRAP_QUEUES_AT,
+#                                                  step_snapshot_max=STEP_SNAPSHOT_MAX,
+#                                                  gap_between_entities=10,
+#                                                  gap_between_resources=10,
+#                                                  gap_between_rows=30,
+#                                                  debug_mode=True
+#                                                  )
+
+# position_logs.sort_values(['patient', 'minute']).head(150)
+
+# generate_animation(
+#         full_patient_df_plus_pos=position_logs.sort_values(['patient', 'minute']),
+#         event_position_df= event_position_df,
+#         scenario=g(),
+#         debug_mode=True,
+#         setup_mode=False,
+#         include_play_button=True,
+#         icon_and_text_size= 20,
+#         plotly_height=700,
+#         frame_duration=800,
+#         frame_transition_duration=200,
+#         plotly_width=1200,
+#         override_x_max=300,
+#         override_y_max=500,
+#         time_display_units="dhm",
+#         display_stage_labels=False,
+#         #add_background_image="img/example.png",
+#     )
+
+# animate_activity_log(
+#         event_log=filtered_logs[filtered_logs['run']==0],
+#         event_position_df= event_position_df,
+#         scenario=g(),
+#         debug_mode=True,
+#         setup_mode=True,
+#         every_x_time_units=10,
+#         include_play_button=True,
+#         icon_and_text_size=16,
+#         gap_between_entities=10,
+#         gap_between_resources=12,
+#         gap_between_rows=50,
+#         plotly_height=700,
+#         frame_duration=200,
+#         frame_transition_duration=500,
+#         plotly_width=1200,
+#         override_x_max=350,
+#         override_y_max=1350,
+#         limit_duration=30000,
+#         wrap_queues_at=25,
+#         wrap_resources_at=20,
+#         step_snapshot_max=250,
+#         #time_display_units="dhm",
+#         display_stage_labels=True,
+#         custom_resource_icon="🛏️"
+#     )
+
+STEP_SNAPSHOT_MAX = g.number_of_nelbeds * 1.1 # ensure this exceeds number of beds
+LIMIT_DURATION = g.sim_duration
 WRAP_QUEUES_AT = 15
 
 reshaped_logs = reshape_for_animations(
     event_log=filtered_logs[filtered_logs['run']==0],
-    every_x_time_units=2,
+    every_x_time_units=60, # set to every hour as sim is in minutes
     step_snapshot_max=STEP_SNAPSHOT_MAX,
     limit_duration=LIMIT_DURATION,
     debug_mode=True
@@ -81,16 +175,16 @@ event_position_df = pd.DataFrame([
 
                     # Triage - minor and trauma
                     {'event': 'admission_wait_begins',
-                     'x':  205, 'y': 275,
+                     'x':  205, 'y': 75,
                      'label': "Waiting for Admission"},
 
                     {'event': 'admission_begins',
-                     'x':  205, 'y': 175,
+                     'x':  505, 'y': 75,
                      'resource':'number_of_nelbeds',
                      'label': "Admitted"},
 
                     {'event': 'exit',
-                     'x':  270, 'y': 70,
+                     'x':  670, 'y': 70,
                      'label': "Exit"}
 
                 ])
@@ -99,9 +193,9 @@ position_logs = generate_animation_df(full_patient_df=reshaped_logs,
                                                  event_position_df=event_position_df,
                                                  wrap_queues_at=WRAP_QUEUES_AT,
                                                  step_snapshot_max=STEP_SNAPSHOT_MAX,
-                                                 gap_between_entities=1,
-                                                 gap_between_resources=1,
-                                                 gap_between_rows=1,
+                                                 gap_between_entities=10, # need this and resource gap to be consistent
+                                                 gap_between_resources=10, # if changing this, also need to specify in generate_animation 
+                                                 gap_between_rows=30, # if changing this, also need to specify in generate_animation  
                                                  debug_mode=True
                                                  )
 
@@ -112,17 +206,18 @@ generate_animation(
         event_position_df= event_position_df,
         scenario=g(),
         debug_mode=True,
-        setup_mode=False,
+        setup_mode=True, # turns on and off gridlines
         include_play_button=True,
-        icon_and_text_size= 20,
-        plotly_height=1200,
+        icon_and_text_size= 16,
+        plotly_height=800,
         frame_duration=800,
         frame_transition_duration=200,
         plotly_width=1500,
-        override_x_max=300,
-        override_y_max=500,
+        override_x_max=600,
+        override_y_max=900,
         time_display_units="dhm",
         display_stage_labels=False,
+        custom_resource_icon='⚬'
         #add_background_image="img/example.png",
     )
 
