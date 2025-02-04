@@ -180,9 +180,16 @@ event_position_df = pd.DataFrame([
                      'x':  50, 'y': 300,
                      'label': "Arrival" },
 
-                    # Triage - minor and trauma
-                    {'event': 'admission_wait_begins',
+                     {'event': 'admission_wait_begins',
                      'x':  205, 'y': 75,
+                     'label': "Waiting for Admission"},
+
+                    {'event': 'sdec_admission_wait_begins',
+                     'x':  205, 'y': 475,
+                     'label': "Waiting for Admission"},
+
+                     {'event': 'other_admission_wait_begins',
+                     'x':  205, 'y': 700,
                      'label': "Waiting for Admission"},
 
                     {'event': 'admission_begins',
@@ -196,7 +203,22 @@ event_position_df = pd.DataFrame([
 
                 ])
 
-position_logs = generate_animation_df(full_patient_df=reshaped_logs,
+def adapt_event(row):
+        if "admission_wait_begins" in row["event"]:
+                if row["pathway"] == "SDEC":
+                        return "sdec_admission_wait_begins"
+                elif row["pathway"] == "Other":
+                        return "other_admission_wait_begins"
+                else:
+                        return row["event"]
+        else:
+                return row["event"]
+            
+reshaped_logs2 = reshaped_logs.assign(
+            event=reshaped_logs.apply(adapt_event, axis=1)
+            )
+
+position_logs = generate_animation_df(full_patient_df=reshaped_logs2,
                                                  event_position_df=event_position_df,
                                                  wrap_queues_at=WRAP_QUEUES_AT,
                                                  step_snapshot_max=STEP_SNAPSHOT_MAX,
@@ -208,7 +230,7 @@ position_logs = generate_animation_df(full_patient_df=reshaped_logs,
 
 position_logs.sort_values(['patient', 'minute']).head(150)
 
-filtered_position_logs = position_logs[(position_logs['minute'] > 86400) & (position_logs['minute'] < 106400)]
+filtered_position_logs = position_logs[(position_logs['minute'] > 120000) & (position_logs['minute'] < 150000)]
 
 filtered_position_logs.sort_values(['patient', 'minute']).head(150)
 
@@ -232,7 +254,7 @@ generate_animation(
         event_position_df= event_position_df,
         scenario=g(),
         debug_mode=True,
-        setup_mode=True, # turns on and off gridlines
+        setup_mode=False, # turns on and off gridlines
         include_play_button=True,
         icon_and_text_size= 16,
         plotly_height=800,
@@ -243,8 +265,8 @@ generate_animation(
         override_y_max=900,
         #time_display_units="dhm",
         display_stage_labels=False,
-        custom_resource_icon='⚬'
-        #add_background_image="img/example.png",
+        custom_resource_icon='⚬',
+        add_background_image="img/sq8.png"
     )
 
 ###################HISTOGRAM###########################################################
