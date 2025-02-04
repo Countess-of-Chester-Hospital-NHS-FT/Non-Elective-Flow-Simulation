@@ -212,8 +212,23 @@ filtered_position_logs = position_logs[(position_logs['minute'] > 86400) & (posi
 
 filtered_position_logs.sort_values(['patient', 'minute']).head(150)
 
+def show_priority_icon(row):
+        if "more" not in row["icon"]:
+                if row["pathway"] == "SDEC":
+                        return "🔴"
+                elif row["pathway"] == "Other":
+                        return "🟣"
+                else:
+                        return row["icon"]
+        else:
+                    return row["icon"]
+            
+filtered_position_logs2 = filtered_position_logs.assign(
+            icon=filtered_position_logs.apply(show_priority_icon, axis=1)
+            )
+
 generate_animation(
-        full_patient_df_plus_pos=filtered_position_logs.sort_values(['patient', 'minute']),
+        full_patient_df_plus_pos=filtered_position_logs2.sort_values(['patient', 'minute']),
         event_position_df= event_position_df,
         scenario=g(),
         debug_mode=True,
