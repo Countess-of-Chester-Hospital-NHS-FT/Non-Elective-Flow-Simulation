@@ -61,25 +61,34 @@ filtered_logs = all_event_logs[all_event_logs['event_type'] != 'other']# &
                                #(all_event_logs['time'] > 100000) &
                                #(all_event_logs['time'] < 102000)]
 
-filtered_logs.head()
+#filtered_logs.head()
 
 STEP_SNAPSHOT_MAX = g.number_of_nelbeds * 1.1 # ensure this exceeds number of beds
 LIMIT_DURATION = g.sim_duration + g.warm_up_period
 WRAP_QUEUES_AT = 15
+X_TIME_UNITS = 30
 
 reshaped_logs = reshape_for_animations(
     event_log=filtered_logs[filtered_logs['run']==0],
-    every_x_time_units=30, # set to every hour as sim is in minutes
+    every_x_time_units=X_TIME_UNITS, # set to every hour as sim is in minutes
     step_snapshot_max=STEP_SNAPSHOT_MAX,
     limit_duration=LIMIT_DURATION,
     debug_mode=True
     )
 
-reshaped_logs.head(15)
+#reshaped_logs.head(15)
 
 event_position_df = pd.DataFrame([
                     {'event': 'arrival',
-                     'x':  50, 'y': 300,
+                     'x':  0, 'y': 200,
+                     'label': "Arrival" },
+
+                     {'event': 'sdec_arrival',
+                     'x':  0, 'y': 525,
+                     'label': "Arrival" },
+
+                     {'event': 'other_arrival',
+                     'x':  0, 'y': 730,
                      'label': "Arrival" },
 
                      {'event': 'admission_wait_begins',
@@ -105,6 +114,7 @@ event_position_df = pd.DataFrame([
 
                 ])
 
+# Assign different waiting locations to 3 kinds of attendance
 def adapt_event(row):
         if "admission_wait_begins" in row["event"]:
                 if row["pathway"] == "SDEC":
@@ -120,6 +130,24 @@ reshaped_logs2 = reshaped_logs.assign(
             event=reshaped_logs.apply(adapt_event, axis=1)
             )
 
+# Add an arrival step for each patient
+first_step = reshaped_logs2.sort_values(["patient", "minute"], ascending=True) \
+                .groupby(["patient"]) \
+                .head(1)
+
+first_step['minute'] = first_step['minute'] - X_TIME_UNITS
+
+conditions = [
+    (first_step['pathway'] == "ED"),   
+    (first_step['pathway'] == "SDEC")   
+]
+choices = ['arrival', 'sdec_arrival'] 
+
+first_step['event'] = np.select(conditions, choices, default='other_arrival')
+
+reshaped_logs2 = pd.concat([reshaped_logs2, first_step], ignore_index=True)
+
+# add co-ordinates to the logs
 position_logs = generate_animation_df(full_patient_df=reshaped_logs2,
                                                  event_position_df=event_position_df,
                                                  wrap_queues_at=WRAP_QUEUES_AT,
@@ -130,12 +158,13 @@ position_logs = generate_animation_df(full_patient_df=reshaped_logs2,
                                                  debug_mode=True
                                                  )
 
-position_logs.sort_values(['patient', 'minute']).head(150)
+#position_logs.sort_values(['patient', 'minute']).head(150)
 
 filtered_position_logs = position_logs[(position_logs['minute'] > 120000) & (position_logs['minute'] < 150000)]
 
-filtered_position_logs.sort_values(['patient', 'minute']).head(150)
+#filtered_position_logs.sort_values(['patient', 'minute']).head(150)
 
+# Assign different icons for SDEC and other
 def show_priority_icon(row):
         if "more" not in row["icon"]:
                 if row["pathway"] == "SDEC":
@@ -156,7 +185,7 @@ generate_animation(
         event_position_df= event_position_df,
         scenario=g(),
         debug_mode=True,
-        setup_mode=False, # turns on and off gridlines
+        setup_mode=True, # turns on and off gridlines
         include_play_button=True,
         icon_and_text_size= 16,
         plotly_height=800,
