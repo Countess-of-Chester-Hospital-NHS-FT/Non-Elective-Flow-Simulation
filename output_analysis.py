@@ -158,6 +158,10 @@ position_logs = generate_animation_df(full_patient_df=reshaped_logs2,
                                                  debug_mode=True
                                                  )
 
+position_logs['x_final'] = np.where((position_logs['event'] == "exit") & (position_logs['event_type'] == "queue"), 150, position_logs['x_final'])
+position_logs['y_final'] = np.where((position_logs['event'] == "exit") & (position_logs['event_type'] == "queue"), 0, position_logs['y_final'])
+position_logs['y_final'] = np.where((position_logs['event'] == "exit") & (position_logs['event_type'] == "resource_use"), 450, position_logs['y_final'])
+position_logs['x_final'] = np.where((position_logs['event'] == "exit") & (position_logs['event_type'] == "resource_use"), 650, position_logs['x_final'])
 #position_logs.sort_values(['patient', 'minute']).head(150)
 
 filtered_position_logs = position_logs[(position_logs['minute'] > 120000) & (position_logs['minute'] < 150000)]
