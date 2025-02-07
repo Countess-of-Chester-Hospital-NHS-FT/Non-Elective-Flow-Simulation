@@ -210,6 +210,8 @@ class Model:
              'time' : self.env.now}
         )
 
+        #self.env.timeout(1)
+
         bed_resource = yield self.nelbed.get(priority=patient.priority)
 
         self.event_log.append(

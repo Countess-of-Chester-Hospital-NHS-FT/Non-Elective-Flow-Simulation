@@ -24,7 +24,7 @@ g.number_of_runs = 10
 all_event_logs, patient_df, patient_df_nowarmup, run_summary_df, trial_summary_df = Trial().run_trial()
 
 #display(all_event_logs.head(1000))
-display(all_event_logs.tail(1000))
+#display(all_event_logs.tail(1000))
 #display(patient_df.tail(1000))
 #display(run_summary_df.head(100))
 #display(trial_summary_df.head(100))
@@ -66,11 +66,11 @@ filtered_logs = all_event_logs[all_event_logs['event_type'] != 'other']# &
 STEP_SNAPSHOT_MAX = g.number_of_nelbeds * 1.1 # ensure this exceeds number of beds
 LIMIT_DURATION = g.sim_duration + g.warm_up_period
 WRAP_QUEUES_AT = 15
-X_TIME_UNITS = 30
+X_TIME_UNITS = 15
 
 reshaped_logs = reshape_for_animations(
     event_log=filtered_logs[filtered_logs['run']==0],
-    every_x_time_units=X_TIME_UNITS, # set to every hour as sim is in minutes
+    every_x_time_units=X_TIME_UNITS,
     step_snapshot_max=STEP_SNAPSHOT_MAX,
     limit_duration=LIMIT_DURATION,
     debug_mode=True
@@ -80,15 +80,15 @@ reshaped_logs = reshape_for_animations(
 
 event_position_df = pd.DataFrame([
                     {'event': 'arrival',
-                     'x':  0, 'y': 200,
+                     'x':  -20, 'y': 200,
                      'label': "Arrival" },
 
                      {'event': 'sdec_arrival',
-                     'x':  0, 'y': 525,
+                     'x':  -20, 'y': 525,
                      'label': "Arrival" },
 
                      {'event': 'other_arrival',
-                     'x':  0, 'y': 730,
+                     'x':  -20, 'y': 730,
                      'label': "Arrival" },
 
                      {'event': 'admission_wait_begins',
@@ -130,6 +130,25 @@ reshaped_logs2 = reshaped_logs.assign(
             event=reshaped_logs.apply(adapt_event, axis=1)
             )
 
+# Add an admission wait for each patient that doesn't have one
+first_step = reshaped_logs2.sort_values(["patient", "minute"], ascending=True) \
+                .groupby(["patient"]) \
+                .head(1)
+
+first_step['minute'] = first_step['minute'] - X_TIME_UNITS
+
+conditions = [
+    ((first_step['pathway'] == "ED") & (first_step['event_type'] == "resource_use")),   
+    ((first_step['pathway'] == "SDEC") & (first_step['event_type'] == "resource_use")),
+        ((first_step['pathway'] == "Other") & (first_step['event_type'] == "resource_use"))
+]
+choices = ['admission_wait_begins', 'sdec_admission_wait_begins', 'other_admission_wait_begins']
+
+first_step['event'] = np.select(conditions, choices, default=first_step['event'])
+first_step['event_type'] = "queue"
+
+reshaped_logs2 = pd.concat([reshaped_logs2, first_step], ignore_index=True)
+
 # Add an arrival step for each patient
 first_step = reshaped_logs2.sort_values(["patient", "minute"], ascending=True) \
                 .groupby(["patient"]) \
@@ -164,7 +183,7 @@ position_logs['y_final'] = np.where((position_logs['event'] == "exit") & (positi
 position_logs['x_final'] = np.where((position_logs['event'] == "exit") & (position_logs['event_type'] == "resource_use"), 650, position_logs['x_final'])
 #position_logs.sort_values(['patient', 'minute']).head(150)
 
-filtered_position_logs = position_logs[(position_logs['minute'] > 120000) & (position_logs['minute'] < 150000)]
+filtered_position_logs = position_logs[(position_logs['minute'] > g.warm_up_period) & (position_logs['minute'] < g.warm_up_period + 10080)] # run for 1 week after warmup
 
 #filtered_position_logs.sort_values(['patient', 'minute']).head(150)
 
@@ -189,7 +208,7 @@ generate_animation(
         event_position_df= event_position_df,
         scenario=g(),
         debug_mode=True,
-        setup_mode=True, # turns on and off gridlines
+        setup_mode=False, # turns on and off gridlines
         include_play_button=True,
         icon_and_text_size= 16,
         plotly_height=800,
@@ -198,7 +217,8 @@ generate_animation(
         plotly_width=1500,
         override_x_max=600,
         override_y_max=900,
-        #time_display_units="dhm",
+        time_display_units="dhm",
+        start_date="2025-02-06 00:00",
         display_stage_labels=False,
         custom_resource_icon='⚬',
         add_background_image="img/sq8.png"
