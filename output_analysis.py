@@ -56,20 +56,13 @@ all_event_logs, patient_df, patient_df_nowarmup, run_summary_df, trial_summary_d
 
 ############ANIMATION#################################################
 
-#print(all_event_logs['event_type'].unique())
-filtered_logs = all_event_logs[all_event_logs['event_type'] != 'other']# & 
-                               #(all_event_logs['time'] > 100000) &
-                               #(all_event_logs['time'] < 102000)]
-
-#filtered_logs.head()
-
 STEP_SNAPSHOT_MAX = g.number_of_nelbeds * 1.1 # ensure this exceeds number of beds
 LIMIT_DURATION = g.sim_duration + g.warm_up_period
 WRAP_QUEUES_AT = 15
 X_TIME_UNITS = 15
 
 reshaped_logs = reshape_for_animations(
-    event_log=filtered_logs[filtered_logs['run']==0],
+    event_log=all_event_logs[all_event_logs['run']==0],
     every_x_time_units=X_TIME_UNITS,
     step_snapshot_max=STEP_SNAPSHOT_MAX,
     limit_duration=LIMIT_DURATION,

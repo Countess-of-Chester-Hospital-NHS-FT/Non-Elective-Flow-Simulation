@@ -4,8 +4,13 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+from animation import animate
 
 from des_classes1 import g, Trial
+
+st.set_page_config(
+     layout="wide"
+ )
 
 #Initialise session state
 if 'button_click_count' not in st.session_state:
@@ -14,6 +19,8 @@ if 'session_results' not in st.session_state:
     st.session_state['session_results'] = []
 if 'session_inputs' not in st.session_state:
     st.session_state['session_inputs'] = []
+#if 'event_logs' not in st.session_state:
+    #st.session_state['event_logs'] = []
 
 st.title("Non-Elective Flow Simulation")
 st.header("(work in progress)")
@@ -54,6 +61,7 @@ with tab1:
             all_event_logs, patient_df, patient_df_nowarmup, run_summary_df, trial_summary_df = Trial().run_trial()
             
             # Adding to session state objects so we can compare scenarios
+            #st.session_state['event_logs'] = all_event_logs
             
             # Comparing inputs
             st.session_state.button_click_count += 1
@@ -141,7 +149,20 @@ with tab1:
             # ###################
 
 with tab_animate:
-    st.write("Animation of the latest scenario goes here")
+    st.write("Animation of the latest scenario goes here - you may have to wait a while for it to generate")
+    st.image("img/sq8.png")
+
+    if st.session_state.button_click_count >= 1:
+        animation = animate(all_event_logs)
+
+        st.plotly_chart(animation,
+                                use_container_width=False,
+                                config = {'displayModeBar': False})
+        
+
+    #st.dataframe(all_event_logs)
+
+    #st.write(f"Result of my_func is {my_result}")
         
 with tab2:
     st.write(f"You've run {st.session_state.button_click_count} scenarios")
