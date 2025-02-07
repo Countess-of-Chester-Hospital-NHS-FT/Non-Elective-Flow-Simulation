@@ -72,7 +72,7 @@ reshaped_logs = reshape_for_animations(
 #reshaped_logs.head(15)
 
 event_position_df = pd.DataFrame([
-                    {'event': 'arrival',
+                    {'event': 'ed_arrival',
                      'x':  -20, 'y': 200,
                      'label': "Arrival" },
 
@@ -153,7 +153,7 @@ conditions = [
     (first_step['pathway'] == "ED"),   
     (first_step['pathway'] == "SDEC")   
 ]
-choices = ['arrival', 'sdec_arrival'] 
+choices = ['ed_arrival', 'sdec_arrival'] 
 
 first_step['event'] = np.select(conditions, choices, default='other_arrival')
 
