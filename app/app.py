@@ -150,7 +150,7 @@ with tab1:
 
 with tab_animate:
     st.write("Animation of the latest scenario goes here - you may have to wait a while for it to generate")
-    st.image("img/sq8.png")
+    #st.image("img/sq8.png")
 
     if st.session_state.button_click_count >= 1:
         animation = animate(all_event_logs)
