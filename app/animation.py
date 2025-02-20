@@ -159,7 +159,7 @@ def animate(logs):
         start_date="2025-02-06 00:00",
         display_stage_labels=False,
         custom_resource_icon='⚬',
-        add_background_image="img/sq8.png"
+        add_background_image="https://raw.githubusercontent.com/Countess-of-Chester-Hospital-NHS-FT/Non-Elective-Flow-Simulation/refs/heads/main/app/img/animation_background.png"
     )
 
     return animation
