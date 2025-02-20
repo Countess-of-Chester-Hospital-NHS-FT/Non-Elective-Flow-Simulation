@@ -18,7 +18,7 @@ g.mean_time_in_bed = (225 * 60) # convert hrs to minutes
 g.sd_time_in_bed = (405 * 60) # convert hrs to minutes
 g.sim_duration = (60 * 24 * 60) # convert days into minutes
 g.warm_up_period = (60 * 24 * 60)
-g.number_of_runs = 10
+g.number_of_runs = 2
 
 # Call the run_trial method of our Trial object
 all_event_logs, patient_df, patient_df_nowarmup, run_summary_df, trial_summary_df = Trial().run_trial()
