@@ -4,8 +4,13 @@ import pandas as pd
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
+from animation import animate
 
 from des_classes1 import g, Trial
+
+st.set_page_config(
+     layout="wide"
+ )
 
 #Initialise session state
 if 'button_click_count' not in st.session_state:
@@ -14,6 +19,8 @@ if 'session_results' not in st.session_state:
     st.session_state['session_results'] = []
 if 'session_inputs' not in st.session_state:
     st.session_state['session_inputs'] = []
+#if 'event_logs' not in st.session_state:
+    #st.session_state['event_logs'] = []
 
 st.title("Non-Elective Flow Simulation")
 st.header("(work in progress)")
@@ -54,6 +61,7 @@ with tab1:
             all_event_logs, patient_df, patient_df_nowarmup, run_summary_df, trial_summary_df = Trial().run_trial()
             
             # Adding to session state objects so we can compare scenarios
+            #st.session_state['event_logs'] = all_event_logs
             
             # Comparing inputs
             st.session_state.button_click_count += 1
@@ -84,64 +92,82 @@ with tab1:
             ed_df_nowarmup = patient_df_nowarmup[patient_df_nowarmup["pathway"] == "ED"]
 
             #Create the histogram
-            fig = plt.figure(figsize=(8, 6))
-            sns.histplot(
-            ed_df_nowarmup['q_time_hrs'], 
-            bins=range(int(ed_df_nowarmup['q_time_hrs'].min()), 
-                    int(ed_df_nowarmup['q_time_hrs'].max()) + 1, 1), 
-            kde=False)
+            if ed_df_nowarmup['q_time_hrs'].mean() > 1 :
+                fig = plt.figure(figsize=(8, 6))
+                sns.histplot(
+                ed_df_nowarmup['q_time_hrs'], 
+                bins=range(int(ed_df_nowarmup['q_time_hrs'].min()), 
+                        int(ed_df_nowarmup['q_time_hrs'].max()) + 1, 1), 
+                kde=False)
 
-            # # Set the boundary for the bins to start at 0
-            plt.xlim(left=0)
+                # # Set the boundary for the bins to start at 0
+                plt.xlim(left=0)
 
-            # Add vertical lines with labels
-            lines = [
-                {"x": trial_summary_df.loc["Mean Q Time (Hrs)", "Mean"], "color": "tomato", "label": f'Mean Q Time: {round(trial_summary_df.loc["Mean Q Time (Hrs)", "Mean"])} hrs'},
-                {"x": 4, "color": "mediumturquoise", "label": f'4 Hr DTA Performance: {round(trial_summary_df.loc["Admitted 4hr DTA Performance (%)", "Mean"])}%'},
-                {"x": 12, "color": "royalblue", "label": f'12 Hr DTAs per day: {round(trial_summary_df.loc["12hr DTAs (per day)", "Mean"])}'},
-                {"x": trial_summary_df.loc["95th Percentile Q Time (Hrs)", "Mean"], "color": "goldenrod", "label": f'95th Percentile Q Time: {round(trial_summary_df.loc["95th Percentile Q Time (Hrs)", "Mean"])} hrs'},
-                {"x": trial_summary_df.loc["Max Q Time (Hrs)", "Mean"], "color": "slategrey", "label": f'Max Q Time: {round(trial_summary_df.loc["Max Q Time (Hrs)", "Mean"])} hrs'},
-            ]
+                # Add vertical lines with labels
+                lines = [
+                    {"x": trial_summary_df.loc["Mean Q Time (Hrs)", "Mean"], "color": "tomato", "label": f'Mean Q Time: {round(trial_summary_df.loc["Mean Q Time (Hrs)", "Mean"])} hrs'},
+                    {"x": 4, "color": "mediumturquoise", "label": f'4 Hr DTA Performance: {round(trial_summary_df.loc["Admitted 4hr DTA Performance (%)", "Mean"])}%'},
+                    {"x": 12, "color": "royalblue", "label": f'12 Hr DTAs per day: {round(trial_summary_df.loc["12hr DTAs (per day)", "Mean"])}'},
+                    {"x": trial_summary_df.loc["95th Percentile Q Time (Hrs)", "Mean"], "color": "goldenrod", "label": f'95th Percentile Q Time: {round(trial_summary_df.loc["95th Percentile Q Time (Hrs)", "Mean"])} hrs'},
+                    {"x": trial_summary_df.loc["Max Q Time (Hrs)", "Mean"], "color": "slategrey", "label": f'Max Q Time: {round(trial_summary_df.loc["Max Q Time (Hrs)", "Mean"])} hrs'},
+                ]
 
-            for line in lines:
-                # Add the vertical line
-                plt.axvline(x=line["x"], color=line["color"], linestyle='--', linewidth=1, zorder=0)
-                
-                # Add label with text
-                plt.text(line["x"] + 2, plt.ylim()[1] * 0.95, line["label"], 
-                        color=line["color"], ha='left', va='top', fontsize=10, rotation=90,
-                        bbox=dict(facecolor='white', edgecolor='none', alpha=0.3, boxstyle='round,pad=0.5'))
+                for line in lines:
+                    # Add the vertical line
+                    plt.axvline(x=line["x"], color=line["color"], linestyle='--', linewidth=1, zorder=0)
+                    
+                    # Add label with text
+                    plt.text(line["x"] + 2, plt.ylim()[1] * 0.95, line["label"], 
+                            color=line["color"], ha='left', va='top', fontsize=10, rotation=90,
+                            bbox=dict(facecolor='white', edgecolor='none', alpha=0.3, boxstyle='round,pad=0.5'))
 
-            # Add transparent rectangles for confidence intervals
-            ci_ranges = [
-                {"lower": trial_summary_df.loc["Mean Q Time (Hrs)", "Lower 95% CI"], 
-                "upper": trial_summary_df.loc["Mean Q Time (Hrs)", "Upper 95% CI"], "color": "tomato"},
-                {"lower": trial_summary_df.loc["95th Percentile Q Time (Hrs)", "Lower 95% CI"], 
-                "upper": trial_summary_df.loc["95th Percentile Q Time (Hrs)", "Upper 95% CI"], "color": "goldenrod"},
-                {"lower": trial_summary_df.loc["Max Q Time (Hrs)", "Lower 95% CI"], 
-                "upper": trial_summary_df.loc["Max Q Time (Hrs)", "Upper 95% CI"], "color": "slategrey"},
-            ]
+                # Add transparent rectangles for confidence intervals
+                ci_ranges = [
+                    {"lower": trial_summary_df.loc["Mean Q Time (Hrs)", "Lower 95% CI"], 
+                    "upper": trial_summary_df.loc["Mean Q Time (Hrs)", "Upper 95% CI"], "color": "tomato"},
+                    {"lower": trial_summary_df.loc["95th Percentile Q Time (Hrs)", "Lower 95% CI"], 
+                    "upper": trial_summary_df.loc["95th Percentile Q Time (Hrs)", "Upper 95% CI"], "color": "goldenrod"},
+                    {"lower": trial_summary_df.loc["Max Q Time (Hrs)", "Lower 95% CI"], 
+                    "upper": trial_summary_df.loc["Max Q Time (Hrs)", "Upper 95% CI"], "color": "slategrey"},
+                ]
 
-            for ci in ci_ranges:
+                for ci in ci_ranges:
 
-                plt.axvspan(
-                    ci["lower"],
-                    ci["upper"],
-                    color=ci["color"],
-                    alpha=0.2,
-                    zorder=0)
+                    plt.axvspan(
+                        ci["lower"],
+                        ci["upper"],
+                        color=ci["color"],
+                        alpha=0.2,
+                        zorder=0)
 
-            # Add labels and title if necessary
-            plt.xlabel('Admission Delays (Hours)')
-            plt.title('Histogram of Admission Delays (All Runs)')
-            fig.text(0.8, 0.01, 'Boxes show 95% CI.', ha='center', fontsize=10)
+                # Add labels and title if necessary
+                plt.xlabel('Admission Delays (Hours)')
+                plt.title('Histogram of Admission Delays (All Runs)')
+                fig.text(0.8, 0.01, 'Boxes show 95% CI.', ha='center', fontsize=10)
 
-            # Display the plot
-            st.pyplot(fig)
+                col1, col2, col3 = st.columns([3, 1, 1])  # Adjust column ratios
+                with col1:  
+                # Display the plot
+                    st.pyplot(fig)
+            else:
+                st.write("Waiting times cannot be plotted on a histogram as there are no significant waits for admission")
             # ###################
 
 with tab_animate:
-    st.write("Animation of the latest scenario goes here")
+    st.write("Animation of the latest scenario goes here - you may have to wait a while for it to generate")
+    #st.image("img/sq8.png")
+
+    if 'all_event_logs' in globals():
+        animation = animate(all_event_logs)
+
+        st.plotly_chart(animation,
+                                use_container_width=False,
+                                config = {'displayModeBar': False})
+        
+
+    #st.dataframe(all_event_logs)
+
+    #st.write(f"Result of my_func is {my_result}")
         
 with tab2:
     st.write(f"You've run {st.session_state.button_click_count} scenarios")
