@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from vidigi.prep import reshape_for_animations, generate_animation_df
 from vidigi.animation import generate_animation
 from vidigi.animation import animate_activity_log
-from app.des_classes1 import g, Trial
+from app.model import g, Trial
 
 #overwrite g class - so its easy to play around with
 g.ed_inter_visit = (1440 / 38) # convert daily arrivals into inter-arrival time

@@ -6,7 +6,7 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 from animation import animate
 
-from des_classes1 import g, Trial
+from model import g, Trial
 
 st.set_page_config(
      layout="wide"

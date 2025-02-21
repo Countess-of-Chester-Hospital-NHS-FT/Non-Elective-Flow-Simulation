@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from vidigi.prep import reshape_for_animations, generate_animation_df
 from vidigi.animation import generate_animation
-from des_classes1 import g
+from model import g
 
 
 def animate(logs):
