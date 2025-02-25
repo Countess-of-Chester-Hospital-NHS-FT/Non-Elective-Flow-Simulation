@@ -34,5 +34,5 @@ The model simulates the system as illustrated in the flowchart below. For more
 detail on how the model works see the 'More Information' page
 """)
 
-st.image("img/model_diagram.png")
+st.image("https://raw.githubusercontent.com/Countess-of-Chester-Hospital-NHS-FT/Non-Elective-Flow-Simulation/refs/heads/main/app/img/model_diagram.png")
 

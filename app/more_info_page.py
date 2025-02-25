@@ -10,7 +10,7 @@ Reduced to its simplest possible components non-elective flow can be modelled
 as below:
 """)
 
-st.image("img/model_diagram.png")
+st.image("https://raw.githubusercontent.com/Countess-of-Chester-Hospital-NHS-FT/Non-Elective-Flow-Simulation/refs/heads/main/app/img/model_diagram.png")
 
 st.markdown("""
 The inputs to the model are the number of patients needing non-elective 
