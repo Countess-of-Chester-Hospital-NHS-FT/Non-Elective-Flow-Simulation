@@ -154,25 +154,30 @@ with tab1:
             # ###################
 
 with tab_animate:
-    st.write("Animation of the latest scenario goes here - you may have to wait a while for it to generate")
+    with st.spinner("Generating animation"):
 
-    if 'all_event_logs' in globals():
-        animation = animate(all_event_logs)
+        if 'all_event_logs' in globals():
+            animation = animate(all_event_logs)
 
-        st.session_state['animation'] = animation
+            st.session_state['animation'] = animation
 
-    if st.session_state.button_click_count > 0:
+        if st.session_state.button_click_count > 0:
+            st.markdown("""
+                        Animation of a single run of the latest scenario.
 
-        st.plotly_chart(st.session_state['animation'],
-                                use_container_width=False,
-                                config = {'displayModeBar': False})
-        
-        st.download_button(
-                label="Download Plot as HTML",
-                data=st.session_state['animation'].to_html(full_html=False, include_plotlyjs="cdn"),
-                file_name="plot.html",
-                mime="text/html"
-            )
+                        If you are viewing on a small screen minimise the 
+                        sidebar or download the plot.
+                        """)
+            st.plotly_chart(st.session_state['animation'],
+                                    use_container_width=False,
+                                    config = {'displayModeBar': False})
+            
+            st.download_button(
+                    label="Download Plot as HTML",
+                    data=st.session_state['animation'].to_html(full_html=False, include_plotlyjs="cdn"),
+                    file_name="plot.html",
+                    mime="text/html"
+                )
         
 with tab2:
     st.write(f"You've run {st.session_state.button_click_count} scenarios")
