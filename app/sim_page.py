@@ -19,8 +19,8 @@ if 'session_results' not in st.session_state:
     st.session_state['session_results'] = []
 if 'session_inputs' not in st.session_state:
     st.session_state['session_inputs'] = []
-#if 'event_logs' not in st.session_state:
-    #st.session_state['event_logs'] = []
+if 'animation' not in st.session_state:
+    st.session_state['animation'] = []
 
 st.title("Non-Elective Flow Simulation")
 st.header("(work in progress)")
@@ -160,9 +160,20 @@ with tab_animate:
     if 'all_event_logs' in globals():
         animation = animate(all_event_logs)
 
-        st.plotly_chart(animation,
+        st.session_state['animation'] = animation ##new
+
+    if st.session_state.button_click_count > 0:
+
+        st.plotly_chart(st.session_state['animation'],
                                 use_container_width=False,
                                 config = {'displayModeBar': False})
+        
+        st.download_button(
+                label="Download Plot as HTML",
+                data=st.session_state['animation'].to_html(full_html=False, include_plotlyjs="cdn"),
+                file_name="plot.html",
+                mime="text/html"
+            )
         
 
     #st.dataframe(all_event_logs)
