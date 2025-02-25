@@ -155,12 +155,11 @@ with tab1:
 
 with tab_animate:
     st.write("Animation of the latest scenario goes here - you may have to wait a while for it to generate")
-    #st.image("img/sq8.png")
 
     if 'all_event_logs' in globals():
         animation = animate(all_event_logs)
 
-        st.session_state['animation'] = animation ##new
+        st.session_state['animation'] = animation
 
     if st.session_state.button_click_count > 0:
 
@@ -174,11 +173,6 @@ with tab_animate:
                 file_name="plot.html",
                 mime="text/html"
             )
-        
-
-    #st.dataframe(all_event_logs)
-
-    #st.write(f"Result of my_func is {my_result}")
         
 with tab2:
     st.write(f"You've run {st.session_state.button_click_count} scenarios")
