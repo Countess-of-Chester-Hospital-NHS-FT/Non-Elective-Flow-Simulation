@@ -161,7 +161,7 @@ with tab_animate:
 
             st.session_state['animation'] = animation
 
-        if st.session_state.button_click_count > 0:
+        if st.session_state['animation']:
             st.markdown("""
                         Animation of a single run of the latest scenario.
 
