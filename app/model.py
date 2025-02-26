@@ -34,13 +34,13 @@ class Model:
         self.run_number = run_number
 
         # Initialise distributions for generators
-        self.ed_inter_visit_dist = Exponential(mean = g.ed_inter_visit, random_seed = self.run_number*2)
-        self.sdec_inter_visit_dist = Exponential(mean = g.sdec_inter_visit, random_seed = self.run_number*3)
-        self.other_inter_visit_dist = Exponential(mean = g.other_inter_visit, random_seed = self.run_number*4)
-        self.mean_time_in_bed_dist = Lognormal(g.mean_time_in_bed, g.sd_time_in_bed, random_seed = self.run_number*5)
-        self.renege_time = Uniform(0, 9000, random_seed = self.run_number*6)
-        self.priority_update = Uniform(0, 9000, random_seed = self.run_number*7)
-        self.priority = Uniform(1,2, random_seed = self.run_number*8)
+        self.ed_inter_visit_dist = Exponential(mean = g.ed_inter_visit, random_seed = (self.run_number+1)*2)
+        self.sdec_inter_visit_dist = Exponential(mean = g.sdec_inter_visit, random_seed = (self.run_number+1)*3)
+        self.other_inter_visit_dist = Exponential(mean = g.other_inter_visit, random_seed = (self.run_number+1)*4)
+        self.mean_time_in_bed_dist = Lognormal(g.mean_time_in_bed, g.sd_time_in_bed, random_seed = (self.run_number+1)*5)
+        self.renege_time = Uniform(0, 9000, random_seed = (self.run_number+1)*6)
+        self.priority_update = Uniform(0, 9000, random_seed = (self.run_number+1)*7)
+        self.priority = Uniform(1,2, random_seed = (self.run_number+1)*8)
         self.init_resources()
 
     def init_resources(self):

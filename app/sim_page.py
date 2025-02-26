@@ -31,7 +31,7 @@ with st.sidebar:
     sd_los_slider = st.slider("Adjust the los standard deviation",
                                 min_value=300, max_value=450, value=347)
     num_nelbeds_slider = st.slider("Adjust the number of beds available",
-                                min_value=380, max_value=520, value=445)
+                                min_value=380, max_value=500, value=434)
     daily_ed_adm_slider = st.slider("Adjust the average number of admissions via ED per day",
                                     min_value=25, max_value=55, value=39)
     daily_sdec_adm_slider = st.slider("Adjust the average number of admissions via SDEC per day",
