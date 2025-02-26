@@ -94,13 +94,13 @@ display(max_fig.show())
 ############################ worst flow scenario ###################################
 print("Plots for worst flow scenario")
 #overwrite g class - so its easy to play around with
-g.ed_inter_visit = (1440 / 55) # convert daily arrivals into inter-arrival time
-g.sdec_inter_visit = (1440 / 30)
-g.other_inter_visit = (1440 / 3)
+g.ed_inter_visit = (1440 / 45) # convert daily arrivals into inter-arrival time
+g.sdec_inter_visit = (1440 / 15)
+g.other_inter_visit = (1440 / 5)
 g.number_of_nelbeds = 380
-g.mean_time_in_bed = (300 * 60) # convert hrs to minutes
+g.mean_time_in_bed = (250 * 60) # convert hrs to minutes
 g.sd_time_in_bed = (347 * 60) # convert hrs to minutes
-g.sim_duration = (240 * 24 * 60) # convert days into minutes
+g.sim_duration = (480 * 24 * 60) # convert days into minutes
 g.warm_up_period = (120 * 24 * 60)
 g.number_of_runs = 5
 
@@ -183,11 +183,11 @@ display(max_fig.show())
 print("Plots for best flow scenario")
 #overwrite g class - so its easy to play around with
 g.ed_inter_visit = (1440 / 25) # convert daily arrivals into inter-arrival time
-g.sdec_inter_visit = (1440 / 0)
-g.other_inter_visit = (1440 / 0)
+g.sdec_inter_visit = (1440 / 1)
+g.other_inter_visit = (1440 / 1)
 g.number_of_nelbeds = 500
-g.mean_time_in_bed = (150 * 60) # convert hrs to minutes
-g.sd_time_in_bed = (347 * 60) # convert hrs to minutes
+g.mean_time_in_bed = (175 * 60) # convert hrs to minutes
+g.sd_time_in_bed = (300 * 60) # convert hrs to minutes
 g.sim_duration = (240 * 24 * 60) # convert days into minutes
 g.warm_up_period = (120 * 24 * 60)
 g.number_of_runs = 5

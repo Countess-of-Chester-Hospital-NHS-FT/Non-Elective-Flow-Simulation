@@ -27,7 +27,7 @@ st.header("(work in progress)")
 
 with st.sidebar:
     mean_los_slider = st.slider("Adjust the mean los in hours",
-                                min_value=150, max_value=300, value=219)
+                                min_value=175, max_value=275, value=219)
     sd_los_slider = st.slider("Adjust the los standard deviation",
                                 min_value=300, max_value=450, value=347)
     num_nelbeds_slider = st.slider("Adjust the number of beds available",
@@ -35,9 +35,9 @@ with st.sidebar:
     daily_ed_adm_slider = st.slider("Adjust the average number of admissions via ED per day",
                                     min_value=25, max_value=55, value=39)
     daily_sdec_adm_slider = st.slider("Adjust the average number of admissions via SDEC per day",
-                                    min_value=0, max_value=30, value=11)
+                                    min_value=1, max_value=20, value=11)
     daily_other_adm_slider = st.slider("Adjust the average number of admissions via other routes per day",
-                                    min_value=0, max_value=20, value=3)
+                                    min_value=1, max_value=10, value=3)
     num_runs_slider = st. slider("Adjust the number of runs the model does",
                                  min_value=10, max_value=20, value=10)
 
@@ -45,8 +45,8 @@ g.mean_time_in_bed = (mean_los_slider * 60)
 g.sd_time_in_bed = (sd_los_slider * 60)
 g.number_of_nelbeds = num_nelbeds_slider
 g.ed_inter_visit = 1440/daily_ed_adm_slider
-g.sdec_inter_visit = 1440/daily_sdec_adm_slider
-g.other_inter_visit = 1440/daily_other_adm_slider
+g.sdec_inter_visit = 1440/daily_sdec_adm_slider #if daily_sdec_adm_slider != 0 else 0
+g.other_inter_visit = 1440/daily_other_adm_slider #if daily_other_adm_slider != 0 else 0
 g.number_of_runs = num_runs_slider
 
 tab1, tab_animate, tab2 = st.tabs(["Run the model", "Animation", "Compare scenarios"])
