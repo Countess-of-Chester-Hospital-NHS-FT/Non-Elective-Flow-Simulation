@@ -1,6 +1,7 @@
 
 import simpy
 import pandas as pd
+import numpy as np
 from sim_tools.distributions import (Exponential, Lognormal, Uniform)
 from scipy.stats import sem, t
 import scipy.stats as stats
@@ -286,6 +287,8 @@ class Trial:
         df["q_time"] = df["admission_begins"] - df["admission_wait_begins"]
         df["q_time_hrs"] = df["q_time"] / 60.0
         df["treatment_time"] = df["admission_complete"] - df["admission_begins"]
+        if "renege" not in df.columns:
+            df["renege"] = np.nan
         self.patient_df = df
         self.patient_df_nowarmup = df[df["arrival"] > g.warm_up_period]
 
