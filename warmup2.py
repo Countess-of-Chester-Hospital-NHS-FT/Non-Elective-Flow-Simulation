@@ -4,7 +4,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from app.model import g, Trial
 
-for i in range(25, 45, 5):
+for i in range(25, 75, 5):
 
     daily_ed = i
 
@@ -15,7 +15,7 @@ for i in range(25, 45, 5):
     g.mean_time_in_bed = (219 * 60) # convert hrs to minutes
     g.sd_time_in_bed = (347 * 60) # convert hrs to minutes
     g.sim_duration = (960 * 24 * 60) # convert days into minutes
-    g.warm_up_period = (120 * 24 * 60)
+    #g.warm_up_period = (120 * 24 * 60)
     g.number_of_runs = 10
 
     # Call the run_trial method of our Trial object
@@ -43,7 +43,7 @@ for i in range(25, 45, 5):
 
     #calculate rolling average by day
     plot_df["rolling_qtime"]=(plot_df.groupby("run")["q_time_hrs"]
-                            .transform(lambda x: x.rolling(window=30, min_periods=1)
+                            .transform(lambda x: x.rolling(window=60, min_periods=1)
                                         .mean()))
 
     # Create figure
@@ -74,9 +74,9 @@ for i in range(25, 45, 5):
 
     # Update layout for clarity
     fig.update_layout(
-        title=f"Rolling Mean Queue Time by Run {daily_ed}",
+        title=f"Rolling Mean Queue Time by - ed admission demand: {daily_ed}",
         xaxis_title="Arrival Day",
-        yaxis_title="Rolling Queue Time",
+        yaxis_title="Rolling Mean Queue Time (Hrs)",
         legend_title="Legend"
     )
 
