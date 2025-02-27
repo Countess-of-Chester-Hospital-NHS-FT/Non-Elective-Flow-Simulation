@@ -15,7 +15,7 @@ class g: # global
     mean_time_in_bed = 13500 
     sd_time_in_bed = 24297
     sim_duration = 86400 
-    warm_up_period = 86400 
+    warm_up_period = (300 * 24 * 60) #convert days into minutes
     number_of_runs = 10
 
 class Patient:
