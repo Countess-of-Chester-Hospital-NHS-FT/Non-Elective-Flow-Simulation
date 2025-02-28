@@ -352,10 +352,10 @@ class Trial:
     
 
 #For testing
-#my_trial = Trial()
-#print(f"Running {g.number_of_runs} simulations......")
-#all_event_logs, patient_df, patient_df_nowarmup, run_summary_df, trial_summary_df =  my_trial.run_trial()
-#display(my_trial.all_event_logs.head(1000))
+# my_trial = Trial()
+# print(f"Running {g.number_of_runs} simulations......")
+# all_event_logs, patient_df, patient_df_nowarmup, run_summary_df, trial_summary_df =  my_trial.run_trial()
+# display(my_trial.all_event_logs.head(1000))
 #display(my_trial.patient_df.head(1000))
 # display(my_trial.patient_df_nowarmup.head(1000))
 # display(my_trial.run_summary_df)
