@@ -3,9 +3,13 @@ import numpy as np
 from vidigi.prep import reshape_for_animations, generate_animation_df
 from vidigi.animation import generate_animation
 from model import g
+import time
 
 
 def animate(logs):
+    start_time = time.time()
+    print(f'animation function started {time.strftime("%H:%M:%S", time.gmtime(start_time))}')
+    
     STEP_SNAPSHOT_MAX = g.number_of_nelbeds * 1.1 # ensure this exceeds number of beds
     LIMIT_DURATION = g.warm_up_period + 10110
     WRAP_QUEUES_AT = 15
@@ -161,5 +165,10 @@ def animate(logs):
         custom_resource_icon='⚬',
         add_background_image="https://raw.githubusercontent.com/Countess-of-Chester-Hospital-NHS-FT/Non-Elective-Flow-Simulation/refs/heads/main/app/img/sq8.png"
     )
+
+    stop_time = time.time()
+    print(f'animation function stopped {time.strftime("%H:%M:%S", time.gmtime(stop_time))}')
+    timer=stop_time-start_time
+    print(f'Animation timer: {time.strftime("%H:%M:%S", time.gmtime(timer))}')
 
     return animation
