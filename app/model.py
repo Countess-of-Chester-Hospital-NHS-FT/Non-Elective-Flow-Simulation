@@ -1,6 +1,7 @@
 
 import simpy
 import pandas as pd
+import numpy as np
 from sim_tools.distributions import (Exponential, Lognormal, Uniform)
 from scipy.stats import sem, t
 import scipy.stats as stats
@@ -14,7 +15,7 @@ class g: # global
     mean_time_in_bed = 13500 
     sd_time_in_bed = 24297
     sim_duration = 86400 
-    warm_up_period = 86400 
+    warm_up_period = (300 * 24 * 60) #convert days into minutes
     number_of_runs = 10
 
 class Patient:
@@ -34,13 +35,13 @@ class Model:
         self.run_number = run_number
 
         # Initialise distributions for generators
-        self.ed_inter_visit_dist = Exponential(mean = g.ed_inter_visit, random_seed = self.run_number*2)
-        self.sdec_inter_visit_dist = Exponential(mean = g.sdec_inter_visit, random_seed = self.run_number*3)
-        self.other_inter_visit_dist = Exponential(mean = g.other_inter_visit, random_seed = self.run_number*4)
-        self.mean_time_in_bed_dist = Lognormal(g.mean_time_in_bed, g.sd_time_in_bed, random_seed = self.run_number*5)
-        self.renege_time = Uniform(0, 9000, random_seed = self.run_number*6)
-        self.priority_update = Uniform(0, 9000, random_seed = self.run_number*7)
-        self.priority = Uniform(1,2, random_seed = self.run_number*8)
+        self.ed_inter_visit_dist = Exponential(mean = g.ed_inter_visit, random_seed = (self.run_number+1)*2)
+        self.sdec_inter_visit_dist = Exponential(mean = g.sdec_inter_visit, random_seed = (self.run_number+1)*3)
+        self.other_inter_visit_dist = Exponential(mean = g.other_inter_visit, random_seed = (self.run_number+1)*4)
+        self.mean_time_in_bed_dist = Lognormal(g.mean_time_in_bed, g.sd_time_in_bed, random_seed = (self.run_number+1)*5)
+        self.renege_time = Uniform(0, 9000, random_seed = (self.run_number+1)*6)
+        self.priority_update = Uniform(0, 9000, random_seed = (self.run_number+1)*7)
+        self.priority = Uniform(1,2, random_seed = (self.run_number+1)*8)
         self.init_resources()
 
     def init_resources(self):
@@ -286,6 +287,8 @@ class Trial:
         df["q_time"] = df["admission_begins"] - df["admission_wait_begins"]
         df["q_time_hrs"] = df["q_time"] / 60.0
         df["treatment_time"] = df["admission_complete"] - df["admission_begins"]
+        if "renege" not in df.columns:
+            df["renege"] = np.nan
         self.patient_df = df
         self.patient_df_nowarmup = df[df["arrival"] > g.warm_up_period]
 
