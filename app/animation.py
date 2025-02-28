@@ -4,11 +4,14 @@ from vidigi.prep import reshape_for_animations, generate_animation_df
 from vidigi.animation import generate_animation
 from model import g
 import time
+#import datetime as dt
 #from model import Trial #for debugging
 
 
 def animate(logs):
-    print(f'Starting animation function {time.strftime("%H:%M:%S", time.localtime())}')
+    start_time = time.time()
+    print(f'animation function started {time.strftime("%H:%M:%S", time.gmtime(start_time))}')
+
     logs = logs[logs['run']==0]
     #logs['time'] = logs['time'] - g.warm_up_period
     warmup_patients = logs[(logs['event']=="depart") & (logs['time']<=g.warm_up_period)]
@@ -153,6 +156,9 @@ def animate(logs):
                 icon=filtered_position_logs.apply(show_priority_icon, axis=1)
                 )
     
+
+    #today_date = dt.date.today() - pd.DateOffset(days=165)
+    #formatted_date = today_date.strftime("%Y-%m-%d")
     animation = generate_animation(
         full_patient_df_plus_pos=filtered_position_logs2.sort_values(['patient', 'minute']),
         event_position_df= event_position_df,
@@ -168,11 +174,16 @@ def animate(logs):
         override_x_max=600,
         override_y_max=900,
         time_display_units="dhm",
-        start_date="2025-02-06 00:00",
+        start_date="2025-01-01",
         display_stage_labels=False,
         custom_resource_icon='⚬',
         add_background_image="https://raw.githubusercontent.com/Countess-of-Chester-Hospital-NHS-FT/Non-Elective-Flow-Simulation/refs/heads/main/app/img/sq8.png"
     )
+
+    stop_time = time.time()
+    print(f'animation function stopped {time.strftime("%H:%M:%S", time.gmtime(stop_time))}')
+    timer=stop_time-start_time
+    print(f'Animation timer: {time.strftime("%H:%M:%S", time.gmtime(timer))}')
 
     return animation#, filtered_position_logs, position_logs, reshaped_logs2, reshaped_logs # hashed out for debugging
 
