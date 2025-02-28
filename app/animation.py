@@ -11,8 +11,11 @@ def animate(logs):
     WRAP_QUEUES_AT = 15
     X_TIME_UNITS = 30
 
+    logs = logs[logs['run']==0]
+    warmup_patients = logs[(logs['event']=="depart") & (logs['time']<=g.warm_up_period)]
+
     reshaped_logs = reshape_for_animations(
-    event_log=logs[logs['run']==0],
+    event_log=logs[~logs['patient'].isin(warmup_patients['patient'])],
     every_x_time_units=X_TIME_UNITS,
     step_snapshot_max=STEP_SNAPSHOT_MAX,
     limit_duration=LIMIT_DURATION,
