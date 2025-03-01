@@ -17,11 +17,11 @@ def animate(logs):
     warmup_patients = logs[(logs['event']=="depart") & (logs['time']<=g.warm_up_period)]
     logs=logs[~logs['patient'].isin(warmup_patients['patient'])]
     min_time=logs['time'].min()
-    logs['time']=logs['time']-min_time
+    logs['time']=logs['time']-(min_time + (432000-min_time))
 
 
     STEP_SNAPSHOT_MAX = g.number_of_nelbeds * 1.1 # ensure this exceeds number of beds
-    LIMIT_DURATION = int(442110-min_time)
+    LIMIT_DURATION = 10080
     WRAP_QUEUES_AT = 15
     X_TIME_UNITS = 30
 
@@ -138,7 +138,7 @@ def animate(logs):
     position_logs['y_final'] = np.where((position_logs['event'] == "exit") & (position_logs['event_type'] == "resource_use"), 450, position_logs['y_final'])
     position_logs['x_final'] = np.where((position_logs['event'] == "exit") & (position_logs['event_type'] == "resource_use"), 650, position_logs['x_final'])
 
-    filtered_position_logs = position_logs[(position_logs['minute'] > g.warm_up_period-min_time) & (position_logs['minute'] < int(442110-min_time))] # run for 1 week after warmup
+    filtered_position_logs = position_logs[(position_logs['minute'] >= 0) & (position_logs['minute'] < 10080)] # run for 1 week after warmup
 
     # Assign different icons for SDEC and other
     def show_priority_icon(row):
