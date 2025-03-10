@@ -102,7 +102,7 @@ class Model:
 
         # Wait until one of 3 things happens....
         result_of_queue = (yield bed_resource | # they get a bed
-                            self.env.timeout(patient.inpatient_los)) # they renege
+                            self.env.timeout(patient.inpatient_los + 120)) # they renege
 
         if bed_resource in result_of_queue:
             self.event_log.append(
