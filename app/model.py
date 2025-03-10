@@ -22,10 +22,8 @@ class Patient:
     def __init__(self, p_id):
         self.id = p_id
         self.department = ""
-        self.renege_time = 0
         self.priority = 0
-        self.priority_update = 0
-        self.sdec_other_priority = 0.8
+        self.inpatient_los = 0
 
 class Model:
     def __init__(self, run_number):
@@ -39,9 +37,6 @@ class Model:
         self.sdec_inter_visit_dist = Exponential(mean = g.sdec_inter_visit, random_seed = (self.run_number+1)*3)
         self.other_inter_visit_dist = Exponential(mean = g.other_inter_visit, random_seed = (self.run_number+1)*4)
         self.mean_time_in_bed_dist = Lognormal(g.mean_time_in_bed, g.sd_time_in_bed, random_seed = (self.run_number+1)*5)
-        self.renege_time = Uniform(0, 9000, random_seed = (self.run_number+1)*6)
-        self.priority_update = Uniform(0, 9000, random_seed = (self.run_number+1)*7)
-        self.priority = Uniform(1,2, random_seed = (self.run_number+1)*8)
         self.init_resources()
 
     def init_resources(self):
@@ -55,9 +50,8 @@ class Model:
             self.patient_counter += 1
             p = Patient(self.patient_counter)
             p.department = "ED"
-            p.renege_time = self.renege_time.sample()
-            p.priority = round(self.priority.sample())
-            p.priority_update = self.priority_update.sample()
+            p.priority = 1
+            p.inpatient_los = self.mean_time_in_bed_dist.sample()
             self.env.process(self.attend_ed(p))
 
             sampled_inter = self.ed_inter_visit_dist.sample() # time to next patient arriving
@@ -69,6 +63,7 @@ class Model:
             p = Patient(self.patient_counter)
             p.department = "SDEC"
             p.priority = 0.8 # set all sdec patients as high priority
+            p.inpatient_los = self.mean_time_in_bed_dist.sample()
             self.env.process(self.attend_other(p))
 
             sampled_inter = self.sdec_inter_visit_dist.sample()
@@ -80,6 +75,7 @@ class Model:
             p = Patient(self.patient_counter)
             p.department = "Other"
             p.priority = 0.8 # set all other patients as high priority
+            p.inpatient_los = self.mean_time_in_bed_dist.sample()
             self.env.process(self.attend_other(p))
 
             sampled_inter = self.other_inter_visit_dist.sample()
@@ -106,8 +102,7 @@ class Model:
 
         # Wait until one of 3 things happens....
         result_of_queue = (yield bed_resource | # they get a bed
-                            self.env.timeout(patient.renege_time)| # they renege
-                            self.env.timeout(patient.priority_update)) # they become higher priority
+                            self.env.timeout(patient.inpatient_los + 120)) # they renege
 
         if bed_resource in result_of_queue:
             self.event_log.append(
@@ -120,7 +115,7 @@ class Model:
             }
             )
                     
-            sampled_bed_time = self.mean_time_in_bed_dist.sample()
+            sampled_bed_time = patient.inpatient_los
             yield self.env.timeout(sampled_bed_time)
 
             self.event_log.append(
@@ -134,45 +129,6 @@ class Model:
             )
 
             self.nelbed.put(result_of_queue[bed_resource])
-            
-        # If the result of the queue was increase of priority
-        elif patient.priority_update < patient.renege_time:
-            bed_resource.cancel() # SR - Think we need to ensure original request is cancelled at this point
-            patient.priority = patient.priority - 2.2 #arbitrary priority increase
-            self.event_log.append(
-            {'patient' : patient.id,
-            'pathway' : patient.department,
-            'event_type' : 'other',
-            'event' : 'priority_increase',
-            'time' : self.env.now,
-            }
-            )
-        #     # Make another bed request with new priority
-            bed_resource_new = yield self.nelbed.get(priority=patient.priority)
-            self.event_log.append(
-            {'patient' : patient.id,
-            'pathway' : patient.department,
-            'event_type' : 'resource_use',
-            'event' : 'admission_begins',
-            'time' : self.env.now,
-            'resource_id' : bed_resource_new.id_attribute
-            }
-            )
-            
-            sampled_bed_time = self.mean_time_in_bed_dist.sample()
-            yield self.env.timeout(sampled_bed_time)
-
-            self.nelbed.put(bed_resource_new)
-
-            self.event_log.append(
-            {'patient' : patient.id,
-            'pathway' : patient.department,
-            'event_type' : 'resource_use_end',
-            'event' : 'admission_complete',
-            'time' : self.env.now,
-            'resource_id' : bed_resource_new.id_attribute
-            }
-            )
         
     # # If patient reneges
         else:
@@ -225,7 +181,7 @@ class Model:
             }
             )
         
-        sampled_bed_time = self.mean_time_in_bed_dist.sample()
+        sampled_bed_time = patient.inpatient_los
         yield self.env.timeout(sampled_bed_time)
 
         self.event_log.append(
@@ -352,8 +308,8 @@ class Trial:
     
 
 #For testing
-# my_trial = Trial()
-# print(f"Running {g.number_of_runs} simulations......")
+#my_trial = Trial()
+#print(f"Running {g.number_of_runs} simulations......")
 # all_event_logs, patient_df, patient_df_nowarmup, run_summary_df, trial_summary_df =  my_trial.run_trial()
 # display(my_trial.all_event_logs.head(1000))
 #display(my_trial.patient_df.head(1000))
