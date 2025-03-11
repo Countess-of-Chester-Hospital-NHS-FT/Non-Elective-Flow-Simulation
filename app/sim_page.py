@@ -27,19 +27,19 @@ st.header("(work in progress)")
 
 with st.sidebar:
     daily_ed_adm_slider = st.slider("Adjust daily demand for admission via ED",
-                                    min_value=25, max_value=55, value=33)
+                                    min_value=25, max_value=55, value=38)
     daily_sdec_adm_slider = st.slider("Adjust daily demand for admission via SDEC",
-                                    min_value=1, max_value=20, value=14)
+                                    min_value=1, max_value=20, value=12)
     daily_other_adm_slider = st.slider("Adjust daily demand for admission via other routes",
-                                    min_value=1, max_value=10, value=4)
+                                    min_value=1, max_value=10, value=3)
     num_nelbeds_slider = st.slider("Adjust number of non-elective beds",
-                                min_value=380, max_value=500, value=464)
+                                min_value=380, max_value=500, value=446)
     mean_los_slider = st.slider("Adjust mean inpatient LOS (hrs)",
-                                min_value=175, max_value=275, value=216)
+                                min_value=175, max_value=275, value=197)
     
     with st.expander("Advanced Parameters"):
         sd_los_slider = st.slider("Adjust inpatient LOS standard deviation (hrs)",
-                                    min_value=300, max_value=450, value=346)
+                                    min_value=300, max_value=450, value=343)
         num_runs_slider = st.slider("Adjust number of runs the model does",
                                      min_value=10, max_value=20, value=10)
     
