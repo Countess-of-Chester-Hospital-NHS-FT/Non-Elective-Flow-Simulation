@@ -22,24 +22,27 @@ if 'session_inputs' not in st.session_state:
 if 'animation' not in st.session_state:
     st.session_state['animation'] = []
 
-st.title("Non-Elective Flow Simulation")
+st.title("Non-Elective Flow Virtual Hospital")
 st.header("(work in progress)")
 
 with st.sidebar:
-    mean_los_slider = st.slider("Adjust the mean los in hours",
-                                min_value=175, max_value=275, value=216)
-    sd_los_slider = st.slider("Adjust the los standard deviation",
-                                min_value=300, max_value=450, value=346)
-    num_nelbeds_slider = st.slider("Adjust the number of beds available",
-                                min_value=380, max_value=500, value=464)
-    daily_ed_adm_slider = st.slider("Adjust the average number of admissions via ED per day",
+    daily_ed_adm_slider = st.slider("Adjust daily demand for admission via ED",
                                     min_value=25, max_value=55, value=33)
-    daily_sdec_adm_slider = st.slider("Adjust the average number of admissions via SDEC per day",
+    daily_sdec_adm_slider = st.slider("Adjust daily demand for admission via SDEC",
                                     min_value=1, max_value=20, value=14)
-    daily_other_adm_slider = st.slider("Adjust the average number of admissions via other routes per day",
+    daily_other_adm_slider = st.slider("Adjust daily demand for admission via other routes",
                                     min_value=1, max_value=10, value=4)
-    num_runs_slider = st. slider("Adjust the number of runs the model does",
-                                 min_value=10, max_value=20, value=10)
+    num_nelbeds_slider = st.slider("Adjust number of non-elective beds",
+                                min_value=380, max_value=500, value=464)
+    mean_los_slider = st.slider("Adjust mean inpatient LOS (hrs)",
+                                min_value=175, max_value=275, value=216)
+    
+    with st.expander("Advanced Parameters"):
+        sd_los_slider = st.slider("Adjust inpatient LOS standard deviation (hrs)",
+                                    min_value=300, max_value=450, value=346)
+        num_runs_slider = st.slider("Adjust number of runs the model does",
+                                     min_value=10, max_value=20, value=10)
+    
 
 g.mean_time_in_bed = (mean_los_slider * 60)
 g.sd_time_in_bed = (sd_los_slider * 60)
@@ -49,12 +52,12 @@ g.sdec_inter_visit = 1440/daily_sdec_adm_slider #if daily_sdec_adm_slider != 0 e
 g.other_inter_visit = 1440/daily_other_adm_slider #if daily_other_adm_slider != 0 else 0
 g.number_of_runs = num_runs_slider
 
-tab1, tab_animate, tab2 = st.tabs(["Run the model", "Animation", "Compare scenarios"])
+tab1, tab_animate, tab2 = st.tabs(["Run Virtual Hospital", "View Animation", "Compare scenarios"])
 
 
 with tab1:
 
-    button_run_pressed = st.button("Run simulation")
+    button_run_pressed = st.button("Click here to run")
 
     if button_run_pressed:
         with st.spinner("Simulating the system"):
@@ -83,7 +86,12 @@ with tab1:
         
             ################
             st.write(f"You've run {st.session_state.button_click_count} scenarios")
-            st.write("These metrics are for a 60 day period")
+            st.write(f"These metrics are for 60 day period and are a summary of {g.number_of_runs} runs")
+
+            metrics=['Total Admission Demand', 'Admissions via ED',
+                         'Mean Q Time (Hrs)', '95th Percentile Q Time (Hrs)',
+                         '12hr DTAs (per day)', 'Reneged']
+            trial_summary_df=trial_summary_df[trial_summary_df.index.isin(metrics)]
 
             st.dataframe(trial_summary_df)
             ###################
@@ -106,10 +114,10 @@ with tab1:
                 # Add vertical lines with labels
                 lines = [
                     {"x": trial_summary_df.loc["Mean Q Time (Hrs)", "Mean"], "color": "tomato", "label": f'Mean Q Time: {round(trial_summary_df.loc["Mean Q Time (Hrs)", "Mean"])} hrs'},
-                    {"x": 4, "color": "mediumturquoise", "label": f'4 Hr DTA Performance: {round(trial_summary_df.loc["Admitted 4hr DTA Performance (%)", "Mean"])}%'},
-                    {"x": 12, "color": "royalblue", "label": f'12 Hr DTAs per day: {round(trial_summary_df.loc["12hr DTAs (per day)", "Mean"])}'},
+                    #{"x": 4, "color": "mediumturquoise", "label": f'4 Hr DTA Performance: {round(trial_summary_df.loc["Admitted 4hr DTA Performance (%)", "Mean"])}%'},
+                    #{"x": 12, "color": "royalblue", "label": f'12 Hr DTAs per day: {round(trial_summary_df.loc["12hr DTAs (per day)", "Mean"])}'},
                     {"x": trial_summary_df.loc["95th Percentile Q Time (Hrs)", "Mean"], "color": "goldenrod", "label": f'95th Percentile Q Time: {round(trial_summary_df.loc["95th Percentile Q Time (Hrs)", "Mean"])} hrs'},
-                    {"x": trial_summary_df.loc["Max Q Time (Hrs)", "Mean"], "color": "slategrey", "label": f'Max Q Time: {round(trial_summary_df.loc["Max Q Time (Hrs)", "Mean"])} hrs'},
+                    #{"x": trial_summary_df.loc["Max Q Time (Hrs)", "Mean"], "color": "slategrey", "label": f'Max Q Time: {round(trial_summary_df.loc["Max Q Time (Hrs)", "Mean"])} hrs'},
                 ]
 
                 for line in lines:
@@ -127,8 +135,8 @@ with tab1:
                     "upper": trial_summary_df.loc["Mean Q Time (Hrs)", "Upper 95% CI"], "color": "tomato"},
                     {"lower": trial_summary_df.loc["95th Percentile Q Time (Hrs)", "Lower 95% CI"], 
                     "upper": trial_summary_df.loc["95th Percentile Q Time (Hrs)", "Upper 95% CI"], "color": "goldenrod"},
-                    {"lower": trial_summary_df.loc["Max Q Time (Hrs)", "Lower 95% CI"], 
-                    "upper": trial_summary_df.loc["Max Q Time (Hrs)", "Upper 95% CI"], "color": "slategrey"},
+                    #{"lower": trial_summary_df.loc["Max Q Time (Hrs)", "Lower 95% CI"], 
+                    #"upper": trial_summary_df.loc["Max Q Time (Hrs)", "Upper 95% CI"], "color": "slategrey"},
                 ]
 
                 for ci in ci_ranges:

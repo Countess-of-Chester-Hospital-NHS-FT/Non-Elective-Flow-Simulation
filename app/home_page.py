@@ -65,6 +65,8 @@ st.image("https://raw.githubusercontent.com/Countess-of-Chester-Hospital-NHS-FT/
 
 st.markdown("""
 ##### How is the Virtual Hospital different to a real hospital?
+            
+*"All models are wrong, some are useful" George Box*
 
 The Virtual Hospital is a simplified version of a real hospital. It may differ 
 from a real hospital in the following important ways. In the Virtual Hospital:
