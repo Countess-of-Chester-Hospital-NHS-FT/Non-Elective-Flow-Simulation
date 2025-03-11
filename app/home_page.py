@@ -4,23 +4,25 @@ st.set_page_config(
      layout="wide"
  )
 
-st.title("Non-Elective Flow Simulation App")
+st.title("Non-Elective Flow Virtual Hospital")
 st.header("(work in progress)")
 
 st.markdown("""
-Welcome to the Non-Elective Flow Simulation App (v0.0). The app and
-underlying model are being developed by the Data & Analytics team
-at the Countess of Chester Hospital. This app is designed to help understand 
-the effect of different management strategies on ED admission delays (DTA waits)
-. Please note that development of this tool is at an early stage and treat 
-results with caution. We welcome any feedback on the tool.
+Welcome to the Non-Elective Flow Virtual Hospital. The Virtual Hospital is being
+developed by the Data & Analytics (D&A) team at the Countess of Chester Hospital. 
+The Virtual Hospital is intended to help understand the effect of different 
+management strategies on ED admission delays (DTA waits) using a computer 
+simulation. Please note that this is work in progress and please contact the D&A
+ team with any questions or feedback.
 """)
-
-st.write("Head to the 'Run Simulation' page to get started.")
 
 st.markdown("""
             
-##### Example questions the model can provide evidence for:
+##### Example questions the Virtual Hospital can help with:
+            
+The Virtual Hospital can help with questions related to the flow and pathway of 
+**admitted**, **non-elective**, **adult** patients.
+
 * Given x beds, how far does admitted length of stay have to reduce to meet 
 particular waiting time targets for those queuing in ED? (Evidence based target)
 * If we open 15 beds but keep admitted length of stay the same, what is the 
@@ -28,15 +30,34 @@ impact on ED waiting times and the various targets? (Evidence for a particular
 management strategy)
 * What is the optimum number of people to stream from ED to SDEC to minimise ED
 waits for admission? (Evidence for a particular management strategy)
+* How does increase demand impact ED waiting times if the bed base stays static? 
+(Evidence for planning)
+            
+For some worked examples see the examples page (under construction)
 
 """)
 
 st.markdown("""
-##### Model diagram
+##### How does the Virtual Hospital work?
 
-The model simulates the system as illustrated in the flowchart below. For more
-detail on how the model works see the 'More Information' page
-""")
+Patients flow through the system as illustrated in the diagram below. 
+
+*  Patients
+enter the system when it is decided that they require admission (Decision To Admit).
+They can be admitted either via the Emergency Department (ED), the Same Day Emergency
+Care Department (SDEC) or via another route. Admission demand can be altered for each
+of the 3 routes.
+* Patients wait in ED, SDEC or other until there is a bed available. 
+The <span style='color:#FF1493; font-weight:bold'> pink arrow </span>
+represents the queue we are most interested in - these are the patients 
+waiting in ED who are admitted.
+* If a patient is waiting in ED for longer than the amount of time they were 
+expected to stay in hospital (thereby receiving their treatment in ED) they are discharged from ED.
+* When admitted to a bed a patient remains in that bed and the bed is unavailable
+until they are discharged.
+            
+For more detail on how the model works see the 'More Information' page
+""", unsafe_allow_html=True)
 
 st.image("https://raw.githubusercontent.com/Countess-of-Chester-Hospital-NHS-FT/Non-Elective-Flow-Simulation/refs/heads/main/app/img/model_diagram.png")
 
