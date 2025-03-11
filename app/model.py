@@ -274,8 +274,8 @@ class Trial:
         run_summary["total_perf_4hr"]=(run_summary["under_4hr"] / run_summary["ed_demand"])*100
         run_summary=run_summary.drop(columns=["ed_demand", "under_4hr", "ed_sd_qtime"])
         run_summary=run_summary.rename(columns={
-            'total_demand':'Total Demand',
-            'ed_admissions': 'ED Admissions',
+            'total_demand':'Total Admission Demand',
+            'ed_admissions': 'Admissions via ED',
             'reneged': 'Reneged',
             'ed_mean_qtime':'Mean Q Time (Hrs)',
             'ed_min_qtime':'Min Q Time (Hrs)',
