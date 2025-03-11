@@ -68,7 +68,8 @@ st.markdown("""
             
 *"All models are wrong, some are useful" George Box*
 
-The Virtual Hospital is a simplified version of a real hospital. It may differ 
+The Virtual Hospital is a simplified version of a real hospital, although some more
+complexity may be built in in the future. It may differ 
 from a real hospital in the following important ways. In the Virtual Hospital:
 
 * There is no daily or weekly trend in when patients arrive.

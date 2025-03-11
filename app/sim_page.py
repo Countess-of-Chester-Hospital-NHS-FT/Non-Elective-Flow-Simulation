@@ -42,6 +42,17 @@ with st.sidebar:
                                     min_value=300, max_value=450, value=343)
         num_runs_slider = st.slider("Adjust number of runs the model does",
                                      min_value=10, max_value=20, value=10)
+        
+    st.markdown("---")
+
+    st.markdown("""
+    #### Inputs for the real system:
+    
+    Inputs and outputs for the real system at the Countess of Chester Hospital
+    can be found on the [Non-Elective Flow Dashboard](https://app.powerbi.com/groups/9de122d9-f066-4bcf-aebf-74c9a499bcec/reports/c7d62a4c-145c-4b1b-b477-12782838b53a?ctid=37c354b2-85b0-47f5-b222-07b48d774ee3&pbi_source=linkShare)
+    (Access restricted to internal users.)
+    
+                """)
     
 
 g.mean_time_in_bed = (mean_los_slider * 60)
