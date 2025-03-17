@@ -29,9 +29,9 @@ with st.sidebar:
     daily_ed_adm_slider = st.slider("Adjust daily demand for admission via ED",
                                     min_value=25, max_value=55, value=38)
     daily_sdec_adm_slider = st.slider("Adjust daily demand for admission via SDEC",
-                                    min_value=1, max_value=20, value=12)
+                                    min_value=0, max_value=20, value=12)
     daily_other_adm_slider = st.slider("Adjust daily demand for admission via other routes",
-                                    min_value=1, max_value=10, value=3)
+                                    min_value=0, max_value=10, value=3)
     num_nelbeds_slider = st.slider("Adjust number of non-elective beds",
                                 min_value=380, max_value=500, value=446)
     mean_los_slider = st.slider("Adjust mean inpatient LOS (hrs)",
@@ -59,8 +59,8 @@ g.mean_time_in_bed = (mean_los_slider * 60)
 g.sd_time_in_bed = (sd_los_slider * 60)
 g.number_of_nelbeds = num_nelbeds_slider
 g.ed_inter_visit = 1440/daily_ed_adm_slider
-g.sdec_inter_visit = 1440/daily_sdec_adm_slider #if daily_sdec_adm_slider != 0 else 0
-g.other_inter_visit = 1440/daily_other_adm_slider #if daily_other_adm_slider != 0 else 0
+g.sdec_inter_visit = 1440/daily_sdec_adm_slider if daily_sdec_adm_slider != 0 else 0
+g.other_inter_visit = 1440/daily_other_adm_slider if daily_other_adm_slider != 0 else 0
 g.number_of_runs = num_runs_slider
 
 tab1, tab_animate, tab2 = st.tabs(["Run Virtual Hospital", "View Animation", "Compare scenarios"])
