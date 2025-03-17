@@ -36,7 +36,7 @@ class Model:
         self.ed_inter_visit_dist = Exponential(mean = g.ed_inter_visit, random_seed = (self.run_number+1)*2)
         self.sdec_inter_visit_dist = Exponential(mean = g.sdec_inter_visit, random_seed = (self.run_number+1)*3)
         self.other_inter_visit_dist = Exponential(mean = g.other_inter_visit, random_seed = (self.run_number+1)*4)
-        self.exp_time_in_bed_dist = Lognormal(12102.6, 20857.2, random_seed = (self.run_number+1)*5) # governs reneging behaviour - fixed
+        self.exp_time_in_bed_dist = Lognormal(12246, 20365, random_seed = (self.run_number+1)*5) # governs reneging behaviour - fixed (values 2023-march 2025)
         self.mean_time_in_bed_dist = Lognormal(g.mean_time_in_bed, g.sd_time_in_bed, random_seed = (self.run_number+1)*5) # alterable via the interface
         self.init_resources()
 
