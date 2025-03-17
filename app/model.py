@@ -36,7 +36,8 @@ class Model:
         self.ed_inter_visit_dist = Exponential(mean = g.ed_inter_visit, random_seed = (self.run_number+1)*2)
         self.sdec_inter_visit_dist = Exponential(mean = g.sdec_inter_visit, random_seed = (self.run_number+1)*3)
         self.other_inter_visit_dist = Exponential(mean = g.other_inter_visit, random_seed = (self.run_number+1)*4)
-        self.mean_time_in_bed_dist = Lognormal(g.mean_time_in_bed, g.sd_time_in_bed, random_seed = (self.run_number+1)*5)
+        self.exp_time_in_bed_dist = Lognormal(12102.6, 20857.2, random_seed = (self.run_number+1)*5) # governs reneging behaviour - fixed
+        self.mean_time_in_bed_dist = Lognormal(g.mean_time_in_bed, g.sd_time_in_bed, random_seed = (self.run_number+1)*5) # alterable via the interface
         self.init_resources()
 
     def init_resources(self):
@@ -52,6 +53,7 @@ class Model:
             p.department = "ED"
             p.priority = 1
             p.inpatient_los = self.mean_time_in_bed_dist.sample()
+            p.inpatient_exp_los = self.exp_time_in_bed_dist.sample()
             self.env.process(self.attend_ed(p))
 
             sampled_inter = self.ed_inter_visit_dist.sample() # time to next patient arriving
@@ -64,6 +66,7 @@ class Model:
             p.department = "SDEC"
             p.priority = 0.8 # set all sdec patients as high priority
             p.inpatient_los = self.mean_time_in_bed_dist.sample()
+            p.inpatient_exp_los = self.exp_time_in_bed_dist.sample()
             self.env.process(self.attend_other(p))
 
             sampled_inter = self.sdec_inter_visit_dist.sample()
@@ -76,6 +79,7 @@ class Model:
             p.department = "Other"
             p.priority = 0.8 # set all other patients as high priority
             p.inpatient_los = self.mean_time_in_bed_dist.sample()
+            p.inpatient_exp_los = self.exp_time_in_bed_dist.sample()
             self.env.process(self.attend_other(p))
 
             sampled_inter = self.other_inter_visit_dist.sample()
@@ -102,7 +106,7 @@ class Model:
 
         # Wait until one of 3 things happens....
         result_of_queue = (yield bed_resource | # they get a bed
-                            self.env.timeout(patient.inpatient_los + 120)) # they renege
+                            self.env.timeout(patient.inpatient_exp_los)) # they renege
 
         if bed_resource in result_of_queue:
             self.event_log.append(
