@@ -210,8 +210,10 @@ class Model:
 
     def run(self):
         self.env.process(self.generator_ed_arrivals())
-        self.env.process(self.generator_sdec_arrivals())
-        self.env.process(self.generator_other_arrivals())
+        if g.sdec_inter_visit !=0:
+            self.env.process(self.generator_sdec_arrivals())
+        if g.other_inter_visit !=0:
+            self.env.process(self.generator_other_arrivals())
         self.env.run(until=(g.sim_duration + g.warm_up_period))
         self.event_log = pd.DataFrame(self.event_log)
         self.event_log["run"] = self.run_number
