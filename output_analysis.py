@@ -9,6 +9,7 @@ from vidigi.animation import generate_animation
 from vidigi.animation import animate_activity_log
 from app.model import g, Trial
 
+#credential test
 #overwrite g class - so its easy to play around with
 g.ed_inter_visit = (1440 / 38) # convert daily arrivals into inter-arrival time
 g.sdec_inter_visit = (1440 / 11)
