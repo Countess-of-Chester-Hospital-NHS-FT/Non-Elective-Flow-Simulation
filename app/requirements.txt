@@ -10,8 +10,8 @@ ipykernel==6.29.5
 ipython==8.27.0
 openpyxl
 nbformat>=4.2.0
-fiona==1.9.0
 vidigi==0.0.4
 seaborn==0.13.2
 sim-tools==0.6.1
 scipy==1.14.1
+quarto==0.1.0
