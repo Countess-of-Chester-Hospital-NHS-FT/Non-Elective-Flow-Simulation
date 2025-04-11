@@ -1,0 +1,222 @@
+---
+title: "Penguins"
+execute:
+  echo: false
+format:
+    html:
+        toc: true
+        embed-resources: true
+---
+
+```{python}
+#| label: library-imports
+
+import pandas as pd
+from palmerpenguins import load_penguins
+import plotly.express as px
+from itables import show
+from great_tables import GT
+```
+
+```{python}
+#| label: data-imports
+
+penguins_df = load_penguins()
+```
+
+# Morphology of Penguins of the Antarctic
+
+![](lter_penguins.png)
+
+Introducing a groundbreaking new dataset that promises to revolutionize our understanding of Antarctic penguin species: the Palmer Archipelago Penguin Morphology Dataset. For the first time, researchers have compiled comprehensive measurements of Adelie, Chinstrap, and Gentoo penguins, offering unprecedented insights into these charismatic birds of the Southern Ocean.
+
+This novel collection, gathered over three years of meticulous fieldwork from 2007 to 2009, presents a treasure trove of information on penguin physical characteristics. Led by the esteemed Dr. Kristen Gorman and supported by the Palmer Station Long Term Ecological Research Program, this dataset unveils precise measurements of bill dimensions, flipper lengths, and body masses across multiple islands in the Palmer Archipelago.
+
+The full details of the penguin dataset can be found [here](https://allisonhorst.github.io/palmerpenguins/).
+
+## Explore the Dataset
+
+```{python}
+#| label: full-dataframe-display
+show(
+    penguins_df,
+    buttons=["copyHtml5", "csvHtml5", "excelHtml5"],
+    )
+```
+
+```{python}
+
+px.bar(
+    penguins_df['species'].value_counts()
+)
+
+```
+
+```{python}
+
+px.bar(
+    penguins_df['island'].value_counts()
+)
+
+```
+
+```{python}
+pd.DataFrame(penguins_df[['island', 'species']].value_counts())
+```
+
+```{python}
+
+px.bar(
+    penguins_df[['island', 'species']].value_counts().reset_index(),
+    x='species',
+    y='count',
+    color='island'
+)
+
+```
+
+```{python}
+
+px.bar(
+    penguins_df[['island', 'species']].value_counts().reset_index(),
+    x='island',
+    y='count',
+    color='species'
+)
+
+```
+
+## Insights into Penguin Morphology
+
+The relationship between bill length and bill width in Antarctic penguins is an important aspect of their morphology that has been studied extensively. This relationship varies among different penguin species and can provide insights into their ecology and evolution.
+
+```{python}
+#| label: basic-bill-scatterplot
+px.scatter(
+    penguins_df,
+    x="bill_length_mm",
+    y="bill_depth_mm"
+)
+```
+
+Chinstrap penguins (Pygoscelis antarcticus) exhibit sexual dimorphism in their bill dimensions. Males generally have larger bills than females, with both bill length and bill depth being significantly different between the sexes[^1].
+
+[^1]: A new sex determination method using morphological traits in adult chinstrap and gentoo penguins on King George Island, Antarctica - Scientific Figure on ResearchGate. Available from: https://www.researchgate.net/figure/Bill-depth-and-bill-length-in-46-adult-chinstrap-penguins-A-and-bill-length-and-middle_fig2_273495548 [accessed 27 Sept 2024]
+
+This dimorphism is consistent across different populations, with males having bills that are 5.4% to 11.5% larger than females on average[^2].
+
+[^2]: Polito, M. J.; Clucas, G. V.; Hart, T.; and Trivelpiece, W. Z. (2012) "A Simplified Method of Determining the Sex of Pygoscelis Penguins Using Bill Measurements,"Marine Ornithology: Vol. 40 : Iss. 2 , Article 2. Available at: https://digitalcommons.usf.edu/marine_ornithology/vol40/iss2/2
+
+### By Sex
+
+The relationship between bill length and bill depth in chinstrap penguins is not linear. A study of 46 adult chinstrap penguins revealed a distinct pattern when plotting bill depth against bill length[^1]. This relationship can be used to differentiate between males and females, as the two sexes tend to cluster separately when these measurements are compared.
+
+```{python}
+#| label: bill-scatterplot-chinstrap-sex
+
+px.scatter(
+    penguins_df[penguins_df["species"] == "Chinstrap"],
+    x="bill_length_mm",
+    y="bill_depth_mm",
+    color="sex"
+)
+```
+
+## Differences in Penguin Bill Measurement By Island
+
+Site-specific differences in both bill length and bill depth have been observed across various islands[^1].
+
+These variations suggest that environmental factors or genetic isolation may influence bill morphology in different populations.
+
+### Biscoe
+
+```{python}
+#| label: bill-scatterplot-island-biscoe
+
+px.scatter(
+    penguins_df[penguins_df["island"] == "Biscoe"],
+    x="bill_length_mm",
+    y="bill_depth_mm",
+    color="species"
+)
+```
+
+### Dream
+
+```{python}
+#| label: bill-scatterplot-island-dream
+
+px.scatter(
+    penguins_df[penguins_df["island"] == "Dream"],
+    x="bill_length_mm",
+    y="bill_depth_mm",
+    color="species"
+)
+```
+
+### Torgersen
+
+```{python}
+#| label: bill-scatterplot-island-torgersen
+
+px.scatter(
+    penguins_df[penguins_df["island"] == "Torgersen"],
+    x="bill_length_mm",
+    y="bill_depth_mm",
+    color="species"
+)
+```
+
+
+## Morphology Summary
+
+```{python}
+penguin_summary_table_morphology = pd.DataFrame(
+    penguins_df.groupby(['species', 'island']).mean(numeric_only=True)
+    )
+
+(
+    GT(penguin_summary_table_morphology)
+    .tab_header(title="Morphology of Penguins of the Palmer Archipelago",
+                subtitle=f"{penguins_df['year'].min()} to {penguins_df['year'].max()}")
+    .fmt_number(columns=["bill_length_mm", "bill_depth_mm", "flipper_length_mm", "body_mass_g"],
+                decimals=1)
+    .cols_hide(columns="year")
+    .cols_label(
+        bill_length_mm="Bill Length (mm)",
+        bill_depth_mm="Bill Depth (mm)",
+        flipper_length_mm="Flipper Length (mm)",
+        body_mass_g="Body Mass (g)"
+    )
+    )
+```
+
+## References
+
+### Artwork
+
+Artwork by [@allison_horst](https://allisonhorst.com/)
+
+### Measurements
+
+Gorman KB, Williams TD, Fraser WR (2014) Ecological Sexual Dimorphism and Environmental Variability within a Community of Antarctic Penguins (Genus Pygoscelis). PLoS ONE 9(3): e90081. https://doi.org/10.1371/journal.pone.0090081
+
+Adélie penguins:
+
+Palmer Station Antarctica LTER and K. Gorman, 2020. Structural size measurements and isotopic signatures of foraging among adult male and female Adélie penguins (Pygoscelis adeliae) nesting along the Palmer Archipelago near Palmer Station, 2007-2009 ver 5. Environmental Data Initiative. https://doi.org/10.6073/pasta/98b16d7d563f265cb52372c8ca99e60f (Accessed 2020-06-08).
+
+Gentoo penguins:
+
+Palmer Station Antarctica LTER and K. Gorman, 2020. Structural size measurements and isotopic signatures of foraging among adult male and female Gentoo penguin (Pygoscelis papua) nesting along the Palmer Archipelago near Palmer Station, 2007-2009 ver 5. Environmental Data Initiative. https://doi.org/10.6073/pasta/7fca67fb28d56ee2ffa3d9370ebda689 (Accessed 2020-06-08).
+
+Chinstrap penguins:
+
+Palmer Station Antarctica LTER and K. Gorman, 2020. Structural size measurements and isotopic signatures of foraging among adult male and female Chinstrap penguin (Pygoscelis antarcticus) nesting along the Palmer Archipelago near Palmer Station, 2007-2009 ver 6. Environmental Data Initiative. https://doi.org/10.6073/pasta/c14dfcfada8ea13a17536e73eb6fbe9e (Accessed 2020-06-08).
+
+### Cleaned Dataset
+
+[Muhammad Chenariyan Nakhaee](https://github.com/mcnakhaee/palmerpenguins)
+
+### Text
+
+Text generated via [Perplexity AI](https://www.perplexity.ai/), with citations included where relevant.
