@@ -19,8 +19,8 @@ for i in range(len(demand_list)):
 
     #overwrite g class - so its easy to play around with
     g.ed_inter_visit = (1440 / demand_list[i]) # convert daily arrivals into inter-arrival time
-    g.sdec_inter_visit = (1440 / 1)
-    g.other_inter_visit = (1440 / 1)
+    g.sdec_inter_visit = 0
+    g.other_inter_visit = 0
     g.number_of_nelbeds = 434
     g.mean_time_in_bed = (219 * 60) # convert hrs to minutes
     g.sd_time_in_bed = (347 * 60) # convert hrs to minutes
