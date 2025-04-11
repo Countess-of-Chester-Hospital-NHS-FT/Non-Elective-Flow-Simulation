@@ -1,0 +1,47 @@
+---
+title: "Virtual Hospital Non-Elective Flow Report"
+execute:
+  echo: false
+format:
+    html:
+        toc: true
+        embed-resources: true
+---
+```{python}
+#| label: library-imports
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import sys
+import os
+root_dir = os.path.abspath(os.path.join(os.getcwd(), '..'))
+sys.path.append(root_dir)
+from app.model import g, Trial
+```
+
+# Executive summary
+One of the main hospital priorities is to improve performance against the major waiting waiting targets in ED. The main performance metric relating to admitted
+patients is 12 hr breaches from time to Decision To Admit to Admission (12hr DTAs). The target is to have 0 patients waiting over 12 hrs for admission.
+Admission waits are driven by demand for admission, numbers of beds and inpatient
+length of stay, but the relative contribution of these factors and what happens
+to waiting times under different scenrios is poorly understood. It is therefore
+difficult to understand the imapct that we expect different management strategies
+to have and what conditions are required to eliminate 12 hr waits. We deveop a
+simulation model of a hospital that estimates how the distribution of waiting times changes under a range of scenarios. We use the model to set out the impacts of potential policy choices in the virtual hospital. Note that this model does not currently accurately reflect the real hospital.
+
+## Key findings
+1. The hospital should eliminate 12 hr waits for admission. This target is far from being met. Current mean daily DTA breaches are ?
+2. The relationship (in the real system) between the numbers of people waiting is?
+3. Assuming certain inpatient LoS and a bed base of 400 the maximum demand the virtual system can cope with with incurring 12hr DTA breaches is x
+4. Assuming greater demand, such that x daily DTAs are occuring, the bed base would need to be increased by x to reduce DTAs to 0
+5. Assuming greater demand, such that x daily DTAs are occuring, the LoS would need to be reduced by x to reduce DTAs to 0
+6. Alternatively some suggestions of combinations which would also acheive this are suggested.
+7. Repeat 3 but with different proportions of patients going through SDEC.
+8. Repeat with FIFO vs prioritised.
+
+#### What does this teach us about the real system?
+1. In an idealised system reduction in LoS by x is equivalent to having x more beds. Relationships - linear or complex / interactions or additive?
+2. Demonstrates how looking at activity alone will underestimate demand when admission waits are occuring and this underestimation will increase with length of admission waits.
+3. Is admitting through SDEC a good or bad idea?
+4. What LoS reduction is plausible for our hospital - what if we eliminated all NC2R portions of stay? What does benchmarked data say about this?
+5. Say something about FIFO vs other priority systems.
