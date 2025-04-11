@@ -45,13 +45,13 @@ df['Reneged'] = reneged_list
 
 
 ####Plot############
-# fig = px.line(df, x='Demand', y='Daily DTAs', markers=True,
-#               title='Line Chart of Demand vs Daily 12 hr DTAs',
-#               labels={'Demand': 'Demand', 'Daily DTAs': 'Daily DTAs'})
+fig = px.line(df, x='Demand', y='Daily DTAs', markers=True,
+              title='Line Chart of Demand vs Daily 12 hr DTAs',
+              labels={'Demand': 'Demand', 'Daily DTAs': 'Daily DTAs'})
 
-# fig.update_layout(template='plotly_white')
+fig.update_layout(template='plotly_white')
 
-# display(fig.show())
+display(fig.show())
 
 fig_admissions = px.line(df, x='Demand', y='ED Admissions', markers=True,
               title='Line Chart of Demand vs ED Admissions',
@@ -71,17 +71,17 @@ display(fig_admissions.show())
 
 ### Melted chart
 
-# Reshape the DataFrame to long format
-# df_long = df.melt(id_vars='Demand', 
-#                   value_vars=['Daily DTAs', 'ED Admissions', 'Reneged'],
-#                   var_name='Metric', 
-#                   value_name='Value')
+#Reshape the DataFrame to long format
+df_long = df.melt(id_vars='Demand', 
+                  value_vars=['Daily DTAs', 'ED Admissions', 'Reneged'],
+                  var_name='Metric', 
+                  value_name='Value')
 
-# # Create a single line chart with color based on the metric
-# fig = px.line(df_long, x='Demand', y='Value', color='Metric', markers=True,
-#               title='Demand vs Multiple Metrics',
-#               labels={'Value': 'Count', 'Demand': 'Demand'})
+# Create a single line chart with color based on the metric
+fig = px.line(df_long, x='Demand', y='Value', color='Metric', markers=True,
+              title='Demand vs Multiple Metrics',
+              labels={'Value': 'Count', 'Demand': 'Demand'})
 
-# fig.update_layout(template='plotly_white')
+fig.update_layout(template='plotly_white')
 
-# fig.show()
+fig.show()
