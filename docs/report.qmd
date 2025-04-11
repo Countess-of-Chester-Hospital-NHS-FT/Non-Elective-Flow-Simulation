@@ -45,3 +45,35 @@ simulation model of a hospital that estimates how the distribution of waiting ti
 3. Is admitting through SDEC a good or bad idea?
 4. What LoS reduction is plausible for our hospital - what if we eliminated all NC2R portions of stay? What does benchmarked data say about this?
 5. Say something about FIFO vs other priority systems.
+
+#### 1. Current 12 hr DTA position
+
+As shown in Figure 1, the numbers of DTA waits have increased over time
+
+As shown in Figure 2, the median waits for admission / admission wait distributions have changed as follows
+
+
+It would be useful to see if the model can allow us to understand this historical trend alot better.
+
+#### 3. Assuming certain inpatient LoS and a bed base of 400 the maximum demand the virtual system can cope with without incurring 12hr DTA breaches is x
+
+```{python}
+#| label: max-demand
+g.ed_inter_visit = (1440 / 39) # convert daily arrivals into inter-arrival time
+g.sdec_inter_visit = (1440 / 11)
+g.other_inter_visit = (1440 / 3)
+g.number_of_nelbeds = 434
+g.mean_time_in_bed = (219 * 60) # convert hrs to minutes
+g.sd_time_in_bed = (347 * 60) # convert hrs to minutes
+g.sim_duration = (240 * 24 * 60) # convert days into minutes
+g.warm_up_period = (120 * 24 * 60)
+g.number_of_runs = 10
+
+# Call the run_trial method of our Trial object
+all_event_logs, patient_df, patient_df_nowarmup, run_summary_df, trial_summary_df = Trial().run_trial()
+
+df=patient_df
+
+df.head()
+
+```
