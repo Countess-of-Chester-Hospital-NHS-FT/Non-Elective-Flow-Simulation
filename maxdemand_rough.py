@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 from app.model import g, Trial
 
 ############################ default scenario ###################################
-demand_list = list(range(30, 70, 5))
+demand_list = list(range(30, 80, 5))
 
 df = pd.DataFrame()
 
@@ -19,13 +19,13 @@ for i in range(len(demand_list)):
 
     #overwrite g class - so its easy to play around with
     g.ed_inter_visit = (1440 / demand_list[i]) # convert daily arrivals into inter-arrival time
-    g.sdec_inter_visit = 0
-    g.other_inter_visit = 0
+    g.sdec_inter_visit = (1440 / 1)
+    g.other_inter_visit = (1440 / 1)
     g.number_of_nelbeds = 434
     g.mean_time_in_bed = (219 * 60) # convert hrs to minutes
     g.sd_time_in_bed = (347 * 60) # convert hrs to minutes
     g.sim_duration = (240 * 24 * 60) # convert days into minutes
-    g.warm_up_period = (120 * 24 * 60)
+    g.warm_up_period = (300 * 24 * 60)
     g.number_of_runs = 10
 
     # Call the run_trial method of our Trial object
@@ -45,13 +45,13 @@ df['Reneged'] = reneged_list
 
 
 ####Plot############
-fig = px.line(df, x='Demand', y='Daily DTAs', markers=True,
-              title='Line Chart of Demand vs Daily 12 hr DTAs',
-              labels={'Demand': 'Demand', 'Daily DTAs': 'Daily DTAs'})
+# fig = px.line(df, x='Demand', y='Daily DTAs', markers=True,
+#               title='Line Chart of Demand vs Daily 12 hr DTAs',
+#               labels={'Demand': 'Demand', 'Daily DTAs': 'Daily DTAs'})
 
-fig.update_layout(template='plotly_white')
+# fig.update_layout(template='plotly_white')
 
-display(fig.show())
+# display(fig.show())
 
 fig_admissions = px.line(df, x='Demand', y='ED Admissions', markers=True,
               title='Line Chart of Demand vs ED Admissions',
@@ -61,27 +61,27 @@ fig_admissions.update_layout(template='plotly_white')
 
 display(fig_admissions.show())
 
-fig_renege = px.line(df, x='Demand', y='Reneged', markers=True,
-              title='Line Chart of Demand vs Reneged',
-              labels={'Demand': 'Demand', 'Reneged': 'Reneged'})
+# fig_renege = px.line(df, x='Demand', y='Reneged', markers=True,
+#               title='Line Chart of Demand vs Reneged',
+#               labels={'Demand': 'Demand', 'Reneged': 'Reneged'})
 
-fig_renege.update_layout(template='plotly_white')
+# fig_renege.update_layout(template='plotly_white')
 
-display(fig_renege.show())
+# display(fig_renege.show())
 
 ### Melted chart
 
 # Reshape the DataFrame to long format
-df_long = df.melt(id_vars='Demand', 
-                  value_vars=['Daily DTAs', 'ED Admissions', 'Reneged'],
-                  var_name='Metric', 
-                  value_name='Value')
+# df_long = df.melt(id_vars='Demand', 
+#                   value_vars=['Daily DTAs', 'ED Admissions', 'Reneged'],
+#                   var_name='Metric', 
+#                   value_name='Value')
 
-# Create a single line chart with color based on the metric
-fig = px.line(df_long, x='Demand', y='Value', color='Metric', markers=True,
-              title='Demand vs Multiple Metrics',
-              labels={'Value': 'Count', 'Demand': 'Demand'})
+# # Create a single line chart with color based on the metric
+# fig = px.line(df_long, x='Demand', y='Value', color='Metric', markers=True,
+#               title='Demand vs Multiple Metrics',
+#               labels={'Value': 'Count', 'Demand': 'Demand'})
 
-fig.update_layout(template='plotly_white')
+# fig.update_layout(template='plotly_white')
 
-fig.show()
+# fig.show()

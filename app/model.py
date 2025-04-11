@@ -254,7 +254,8 @@ class Trial:
         self.patient_df = df
         #self.patient_df_nowarmup = df[df["arrival"] > g.warm_up_period]
         self.patient_df_nowarmup = df[(df["arrival"] > g.warm_up_period) 
-                         | (df["depart"] > g.warm_up_period)]
+                         | (df["admission_begins"] > g.warm_up_period)
+                         | (df["renege"] > g.warm_up_period)]
 
     def summarise_runs(self):
         run_summary = self.patient_df_nowarmup
