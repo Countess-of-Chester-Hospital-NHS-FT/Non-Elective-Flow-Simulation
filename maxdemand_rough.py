@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 from app.model import g, Trial
 
 ############################ default scenario ###################################
-demand_list = list(range(30, 80, 5))
+demand_list = list(range(30, 75, 5))
 
 df = pd.DataFrame()
 
