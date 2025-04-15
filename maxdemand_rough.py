@@ -12,9 +12,9 @@ df = pd.DataFrame()
 dtas_list = []
 edadmissions_list = []
 reneged_list = []
+meanwait_list = []
 
 for i in range(len(demand_list)):
-    print(i)
     print(demand_list[i])
 
     #overwrite g class - so its easy to play around with
@@ -35,14 +35,17 @@ for i in range(len(demand_list)):
     value = trial_summary_df.loc['12hr DTAs (per day)', 'Mean']
     value_admissions = trial_summary_df.loc['Admissions via ED', 'Mean'] / (g.sim_duration / 60.0 / 24.0)
     value_reneged = trial_summary_df.loc['Reneged', 'Mean'] / (g.sim_duration / 60.0 / 24.0)
+    value_meanwait = trial_summary_df.loc['Mean Q Time (Hrs)', 'Mean']
     dtas_list.append(value)
     edadmissions_list.append(value_admissions)
     reneged_list.append(value_reneged)
+    meanwait_list.append(value_meanwait)
 
 df['Demand'] = demand_list
 df['Daily DTAs'] = dtas_list
 df['ED Admissions'] = edadmissions_list
 df['Reneged'] = reneged_list
+df['Mean DTA Wait'] = meanwait_list
 
 
 ####Plot############
@@ -51,7 +54,7 @@ df['Reneged'] = reneged_list
 
 #Reshape the DataFrame to long format
 df_long = df.melt(id_vars='Demand', 
-                  value_vars=['Daily DTAs', 'ED Admissions'],
+                  value_vars=['Daily DTAs', 'ED Admissions', 'Mean DTA Wait'],
                   var_name='Metric', 
                   value_name='Value')
 
@@ -68,7 +71,7 @@ first_demand = dta.loc[idx - 1, 'Demand'] if idx and idx > 0 else None
 fig = px.line(df_long, x='Demand', y='Value', color='Metric', markers=True,
               line_dash='Metric',
               title='Demand vs Multiple Metrics',
-              labels={'Value': 'Count', 'Demand': 'Demand'})
+              labels={'Value': 'Value', 'Demand': 'Demand'})
 
 fig.update_layout(template='plotly_white')
 
