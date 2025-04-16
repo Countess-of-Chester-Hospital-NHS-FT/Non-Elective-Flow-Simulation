@@ -290,37 +290,96 @@ class Trial:
             df["renege"] = np.nan
         self.patient_df = df
         #self.patient_df_nowarmup = df[df["arrival"] > g.warm_up_period]
-        self.patient_df_nowarmup = df[(df["arrival"] > g.warm_up_period) 
-                         | (df["admission_begins"] > g.warm_up_period)
-                         | (df["renege"] > g.warm_up_period)]
+        # self.patient_df_nowarmup = df[(df["arrival"] > g.warm_up_period) 
+        #                  | (df["admission_begins"] > g.warm_up_period)
+        #                  | (df["renege"] > g.warm_up_period)]
+        # columns_to_check = [
+        # 'admission_begins', 'admission_complete', 'admission_wait_begins',
+        # 'arrival', 'depart', 'treatment_time', 'renege'
+        # ]
+        # self.patient_df_nowarmup = df[df[columns_to_check].gt(g.warm_up_period).any(axis=1)]
 
     def summarise_runs(self):
-        run_summary = self.patient_df_nowarmup
+        run_summary = self.patient_df
         # note that q_time is na where a patient is not admitted so is automatically omitted from summary calcs
         run_summary = run_summary.groupby("run").agg(
-            total_demand=("patient", "count"),
-            ed_demand=("patient", lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].count()),
-            ed_admissions=("patient", lambda x: x[(self.patient_df_nowarmup["pathway"] == "ED") & (~pd.isna(self.patient_df_nowarmup["admission_begins"]))].count()),
-            reneged=("renege", lambda x: x.notna().sum()),
-            ed_mean_qtime=("q_time",
-                            lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].mean() / 60.0),
-            ed_sd_qtime=("q_time",
-                            lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].std() / 60.0),
-            ed_min_qtime=("q_time",
-                            lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].min() / 60.0),
-            ed_max_qtime=("q_time",
-                            lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].max() / 60.0),
-            ed_95=("q_time",
-                            lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].quantile(0.95) / 60.0),
-            dtas_12hr=("q_time", lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].gt(12 * 60).sum() / (g.sim_duration/1440)),
-            under_4hr=("q_time", lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].lt(4 * 60).sum()),
-            sdec_admissions=("pathway", lambda x: x[(self.patient_df_nowarmup["pathway"] == "SDEC") & (~pd.isna(self.patient_df_nowarmup["admission_begins"]))].count())
+            total_demand=("arrival", lambda x: (x > g.warm_up_period).sum()),
+            discharges=("patient", lambda x: (
+                        ((run_summary.loc[x.index, "admission_complete"] > g.warm_up_period))
+                        .sum())),
+            
+            #("admission_complete", lambda x: (x > g.warm_up_period).sum()),
+            ed_demand=("patient", lambda x: (
+                        ((run_summary.loc[x.index, "arrival"] > g.warm_up_period
+                        ) & (run_summary.loc[x.index, "pathway"] == "ED")).sum())),
+            ed_admissions=("patient", lambda x: (
+                        ((run_summary.loc[x.index, "admission_begins"] > g.warm_up_period
+                        ) & (run_summary.loc[x.index, "pathway"] == "ED")).sum())),
+            reneged=("renege", lambda x: (x > g.warm_up_period).sum()),
+            ed_mean_qtime=("q_time", lambda x: (
+                        x[
+                            (run_summary.loc[x.index, "admission_begins"] > g.warm_up_period) &
+                            (run_summary.loc[x.index, "pathway"] == "ED") &
+                            x.notna()
+                        ].mean() / 60.0
+            )),
+            ed_sd_qtime=("q_time", lambda x: (
+                        x[
+                            (run_summary.loc[x.index, "admission_begins"] > g.warm_up_period) &
+                            (run_summary.loc[x.index, "pathway"] == "ED") &
+                            x.notna()
+                        ].std() / 60.0
+            )),
+            ed_min_qtime=("q_time", lambda x: (
+                        x[
+                            (run_summary.loc[x.index, "admission_begins"] > g.warm_up_period) &
+                            (run_summary.loc[x.index, "pathway"] == "ED") &
+                            x.notna()
+                        ].min() / 60.0
+            )),
+            ed_max_qtime=("q_time", lambda x: (
+                        x[
+                            (run_summary.loc[x.index, "admission_begins"] > g.warm_up_period) &
+                            (run_summary.loc[x.index, "pathway"] == "ED") &
+                            x.notna()
+                        ].max() / 60.0
+            )),
+            ed_95=("q_time", lambda x: (
+                np.percentile(
+                    x[
+                        (run_summary.loc[x.index, "admission_begins"] > g.warm_up_period) &
+                        (run_summary.loc[x.index, "pathway"] == "ED") &
+                        x.notna()
+                    ],
+                    95
+                ) / 60.0
+            )),
+            dtas_12hr=("q_time", lambda x: (
+                        x[
+                            (run_summary.loc[x.index, "admission_begins"] > g.warm_up_period) &
+                            (run_summary.loc[x.index, "pathway"] == "ED") &
+                            x.notna()
+                        ].gt(12 * 60).sum() / (g.sim_duration/1440)
+            )),
+                        #.gt(12 * 60).sum())) / (g.sim_duration/1440),
+            under_4hr=("q_time", lambda x: (
+                        x[
+                            (run_summary.loc[x.index, "admission_begins"] > g.warm_up_period) &
+                            (run_summary.loc[x.index, "pathway"] == "ED") &
+                            x.notna()
+                        ].lt(4 * 60).sum() / (g.sim_duration/1440)
+            )),
+                        #) & (run_summary.loc[x.index, "pathway"] == "ED")).lt(4 * 60).sum())),
+            sdec_admissions=("patient", lambda x: (
+                        ((run_summary.loc[x.index, "admission_begins"] > g.warm_up_period
+                        ) & (run_summary.loc[x.index, "pathway"] == "SDEC")).sum()))
         )
         run_summary["admitted_perf_4hr"]=(run_summary["under_4hr"] / run_summary["ed_admissions"])*100 #
         run_summary["total_perf_4hr"]=(run_summary["under_4hr"] / run_summary["ed_demand"])*100
         run_summary=run_summary.drop(columns=["ed_demand", "under_4hr", "ed_sd_qtime"])
         run_summary=run_summary.rename(columns={
             'total_demand':'Total Admission Demand',
+            'discharges':'Total Discharges',
             'ed_admissions': 'Admissions via ED',
             'reneged': 'Reneged',
             'ed_mean_qtime':'Mean Q Time (Hrs)',
