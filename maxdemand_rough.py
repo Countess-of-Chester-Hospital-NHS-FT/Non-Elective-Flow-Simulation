@@ -3,15 +3,17 @@ import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
 from app.model import g, Trial
+from scipy import stats
+from scipy.stats import lognorm
 
 ############################ default scenario ###################################
 df_bed_titration = pd.DataFrame()
-bed_numbers_list = list(range(360, 480, 10))
+bed_numbers_list = list(range(380, 500, 10))
 first_demand_list = []
 
 for i in range(len(bed_numbers_list)):
     g.number_of_nelbeds = bed_numbers_list[i]
-    demand_list = list(range(32, 54, 2))
+    demand_list = list(range(36, 66, 2))
 
     df = pd.DataFrame()
 
@@ -29,8 +31,8 @@ for i in range(len(bed_numbers_list)):
         g.sdec_inter_visit = 0
         g.other_inter_visit = 0
         #g.number_of_nelbeds = 400
-        g.mean_time_in_bed = (219 * 60) # convert hrs to minutes
-        g.sd_time_in_bed = (347 * 60) # convert hrs to minutes
+        g.mean_time_in_bed = (204 * 60) # convert hrs to minutes
+        g.sd_time_in_bed = (355 * 60) # convert hrs to minutes
         #g.sim_duration = (240 * 24 * 60) # convert days into minutes
         #g.warm_up_period = (300 * 24 * 60)
         g.number_of_runs = 10
@@ -103,7 +105,15 @@ for i in range(len(bed_numbers_list)):
 df_bed_titration['Beds'] = bed_numbers_list
 df_bed_titration['Max Demand'] = first_demand_list
 
+#Regression line
+x = np.array(bed_numbers_list)
+y = np.array(first_demand_list)
+slope, intercept, _, _, _ = stats.linregress(x, y)
+regression_line = slope * x + intercept
+
 fig = px.line(df_bed_titration, x='Beds', y='Max Demand', markers=True)
+fig.add_scatter(x=x, y=regression_line, mode='lines', line=dict(dash='dash'))
+fig.update_layout(template="plotly_white", showlegend=False)
 fig.show()
 #### Mean DTA Wait chart
 # filtered_df = df[df["Demand"] <= 50]
@@ -122,4 +132,24 @@ fig.show()
 #         opacity=0.7
 #     )
 
+# fig.show()
+
+##### Visualising lognormal distributions
+# Given mean and std in real space
+# mean = 200
+# std = 300
+
+# # Convert to shape (s), location (loc), and scale parameters
+# phi = np.sqrt(std**2 + mean**2)
+# sigma = np.sqrt(np.log((phi**2) / (mean**2)))
+# mu = np.log(mean**2 / phi)
+
+# # Generate x values
+# x = np.linspace(1, mean + 4*std, 500)
+# pdf = lognorm.pdf(x, s=sigma, scale=np.exp(mu))
+
+# # Plot
+# fig = go.Figure()
+# fig.add_trace(go.Scatter(x=x, y=pdf, mode='lines', name='Lognormal PDF'))
+# fig.update_layout(template='plotly_white', title='Lognormal Distribution')
 # fig.show()

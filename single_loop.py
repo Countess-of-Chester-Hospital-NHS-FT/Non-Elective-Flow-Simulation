@@ -4,8 +4,9 @@ import plotly.express as px
 import plotly.graph_objects as go
 from app.model import g, Trial
 
-demand_list = list(range(30, 60, 2))
-sdec_list=[round(x * 0.5) for x in demand_list]
+# lists to loop over - adjust as required
+demand_list = list(range(36, 66, 2))
+sdec_list=[round(x * 0.5) for x in demand_list] #set to 0 for all demand through ED
 ed_list=[d - s for d, s in zip(demand_list, sdec_list)]
 check_list=[e + s for e, s in zip(ed_list, sdec_list)]
 
@@ -23,11 +24,11 @@ for i in range(len(demand_list)):
 
         #overwrite g class - so its easy to play around with
         g.ed_inter_visit = (1440 / ed_list[i]) # convert daily arrivals into inter-arrival time
-        g.sdec_inter_visit = (1440 / sdec_list[i])
+        g.sdec_inter_visit = (1440 / sdec_list[i]) # set to 0 for all demand through ED
         g.other_inter_visit = 0
-        g.number_of_nelbeds = 430
-        g.mean_time_in_bed = (219 * 60) # convert hrs to minutes
-        g.sd_time_in_bed = (347 * 60) # convert hrs to minutes
+        g.number_of_nelbeds = 456
+        g.mean_time_in_bed = (204 * 60) # convert hrs to minutes
+        g.sd_time_in_bed = (355 * 60) # convert hrs to minutes
         #g.sim_duration = (240 * 24 * 60) # convert days into minutes
         #g.warm_up_period = (300 * 24 * 60)
         g.number_of_runs = 10
@@ -97,7 +98,7 @@ if first_demand is not None:
 fig.show()
 
 ###### Wait for admission chart
-filtered_df = df[df["Demand"] <= 58]
+filtered_df = df[(df["Demand"] <= 62) & (df["Mean DTA Wait"] <= 900)]
 
 fig = px.line(filtered_df, x = "Demand", y = "Mean DTA Wait", markers=True,
               title='Demand vs Mean ED Wait (50% SDEC)',
