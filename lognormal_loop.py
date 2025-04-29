@@ -48,7 +48,8 @@ for i in range(len(mean_list)):
 
     median = np.exp(mu)
     mode = np.exp(mu - sigma**2)
-    print(f'Distribution {i}: Mean={mean_list[i]}, Median={median:.2f}, Mode={mode:.2f}')
+    print(f'Distribution {i}: Mean={mean_list[i]}, Median={median:.2f},' 
+          f'Mode={mode:.2f}, Sigma={sigma:.2f}')
 
     # Generate x values
     #x = np.linspace(1, mean_list[i] + 4*std_list[i], 500)
@@ -87,7 +88,8 @@ for i in range(len(mean_list)):
 
     median = np.exp(mu)
     mode = np.exp(mu - sigma**2)
-    print(f'Distribution {i}: Mean={mean_list[i]}, Median={median:.2f}, Mode={mode:.2f}')
+    print(f'Distribution {i}: Mean={mean_list[i]}, Median={median:.2f},' 
+          f'Mode={mode:.2f}, Sigma={sigma:.2f}')
 
     # Generate x values
     #x = np.linspace(1, mean_list[i] + 4*std_list[i], 500)
@@ -126,7 +128,8 @@ for i in range(len(mean_list)):
 
     median = np.exp(mu)
     mode = np.exp(mu - sigma**2)
-    print(f'Distribution {i}: Mean={mean_list[i]}, Median={median:.2f}, Mode={mode:.2f}')
+    print(f'Distribution {i}: Mean={mean_list[i]}, Median={median:.2f},' 
+          f'Mode={mode:.2f}, Sigma={sigma:.2f}')
 
     # Generate x values
     #x = np.linspace(1, mean_list[i] + 4*std_list[i], 500)
@@ -150,7 +153,7 @@ fig.show()
 mode_target = 25 # example
 
 # Try different sigma values (smaller sigma → thinner tails)
-sigma_list = np.linspace(0.2, 0.6, 6)  # Adjust as you want
+sigma_list = np.linspace(0.9, 1.4, 12)  # Adjust as you want
 
 # x range
 x_min = 1
@@ -170,7 +173,8 @@ for i, sigma in enumerate(sigma_list):
     median = np.exp(mu)
     mode = np.exp(mu - sigma**2)  # Should exactly equal mode_target
 
-    print(f'Distribution {i}: Sigma={sigma:.3f}, Mean={mean:.2f}, Median={median:.2f}, Mode={mode:.2f}')
+    print(f'Distribution {i}: Sigma={sigma:.3f}, Mean={mean:.2f}, Median={median:.2f},'
+           f'Mode={mode:.2f}, STD={std:.2f}')
 
     pdf = lognorm.pdf(x, s=sigma, scale=np.exp(mu))
 
