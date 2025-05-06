@@ -31,8 +31,8 @@ for i in range(len(bed_numbers_list)):
         g.sdec_inter_visit = 0
         g.other_inter_visit = 0
         #g.number_of_nelbeds = 400
-        g.mean_time_in_bed = (204 * 60) # convert hrs to minutes
-        g.sd_time_in_bed = (355 * 60) # convert hrs to minutes
+        g.mean_time_in_bed = (156.08047785234217 * 60) # convert hrs to minutes
+        g.sd_time_in_bed = (280.10666361721576 * 60) # convert hrs to minutes
         #g.sim_duration = (240 * 24 * 60) # convert days into minutes
         #g.warm_up_period = (300 * 24 * 60)
         g.number_of_runs = 10
@@ -102,12 +102,12 @@ for i in range(len(bed_numbers_list)):
 
     #fig.show()
 #############################End of loop#######################
-df_bed_titration['Beds'] = bed_numbers_list
-df_bed_titration['Max Demand'] = first_demand_list
+df_bed_titration['Beds'] = bed_numbers_list[:6]
+df_bed_titration['Max Demand'] = first_demand_list[:6]
 
 #Regression line
-x = np.array(bed_numbers_list)
-y = np.array(first_demand_list)
+x = np.array(bed_numbers_list[:6])
+y = np.array(first_demand_list[:6])
 slope, intercept, _, _, _ = stats.linregress(x, y)
 regression_line = slope * x + intercept
 

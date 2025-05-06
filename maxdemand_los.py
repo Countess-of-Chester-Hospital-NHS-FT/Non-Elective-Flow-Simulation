@@ -17,7 +17,7 @@ print(f'script started {time.strftime("%H:%M:%S", time.gmtime(start_time))}')
 mode_target = 18 # example
 
 # Try different sigma values (smaller sigma → thinner tails)
-sigma_list = np.linspace(1.2, 1.34, 6)  # Adjust as you want
+sigma_list = np.linspace(1.2, 1.34, 14)  # Adjust as you want
 
 meanlos_list = []
 std_list = []
@@ -137,13 +137,13 @@ df_titration['MeanLOS'] = meanlos_list
 df_titration['Max Demand'] = first_demand_list
 
 #Regression line
-#x = np.array(meanlos_list)
-#y = np.array(first_demand_list)
-#slope, intercept, _, _, _ = stats.linregress(x, y)
-#regression_line = slope * x + intercept
+x = np.array(meanlos_list[1:])
+y = np.array(first_demand_list[1:])
+slope, intercept, _, _, _ = stats.linregress(x, y)
+regression_line = slope * x + intercept
 
 fig = px.line(df_titration, x='MeanLOS', y='Max Demand', markers=True)
-#fig.add_scatter(x=x, y=regression_line, mode='lines', line=dict(dash='dash'))
+fig.add_scatter(x=x, y=regression_line, mode='lines', line=dict(dash='dash'))
 fig.update_layout(template="plotly_white", showlegend=False)
 fig.show()
 
