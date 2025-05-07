@@ -102,7 +102,7 @@ def visualise_lognormal_hist_list(mean_list, std_list, samples):
 visualise_lognormal_hist_list(250, 374.1, 70000)
 
 ### comparison histograms of real distribution with a list of distributions
-
+csv = pd.read_csv("data/los_fy2425.csv")
 
 
 
