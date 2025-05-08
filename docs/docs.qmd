@@ -1,0 +1,164 @@
+---
+title: "Non-Elective Flow Model Documentation"
+execute:
+  echo: false
+format:
+    html:
+        toc: true
+        embed-resources: true
+---
+```{python}
+#| label: library-imports
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import sys
+import os
+root_dir = os.path.abspath(os.path.join(os.getcwd(), '..'))
+sys.path.append(root_dir)
+from app.model import g, Trial
+import plotly.graph_objects as go
+from distribution_functions import calc_mode, hist_compare_real_model, make_lognormal_lists, visualise_lognormal_hist_list
+```
+
+# Inpatient Length of Stay (LoS)
+Inpatient length of stay (the amount of time a patient stays in a bed) is a key
+input to the model and a key target of flow improvement management strategies.
+
+## Real LoS Distribution (FY 24/25)
+Here are 2 histograms showing real inpatient LoS data from FY 24/25 with different
+levels of granularity. Looking at the example with narrow bins shows an approximately
+lognormal distribution and also shows a very jagged pattern! This is likely because
+patients are normally admitted and discharged during the day, making some los values
+much more unlikely.
+
+The model currently makes the assumption patients can be admitted and discharged
+at any time so for the purposes of fitting the distributions I am going to use the
+less granular 24hr binsize histogram which shows how many patients were admitted for 1 day,
+2 days etc.
+
+```{python}
+csv=pd.read_csv("../data/los_fy2425.csv")
+binsize = [5, 24]
+for i in range(len(binsize)):
+
+    fig = go.Figure()
+    fig.add_trace(go.Histogram(
+                x=csv['LoSHrs'],
+                name='Real'
+            ))
+    fig.update_traces(xbins=dict(start=0, end=2000, size=binsize[i]))
+    fig.update_xaxes(range=[0, 2000])
+    fig.update_layout(
+        title = f'Real Inpatient LoS Distribution (FY 24/25) binsize: {binsize[i]} hrs',
+        xaxis_title = 'Hours',
+        yaxis_title = 'Count',
+        template='plotly_white')
+    fig.show()
+
+```
+
+```{python}
+# table of summary metrics
+summary_df = pd.DataFrame()
+
+mean=csv['LoSHrs'].mean()
+std=csv['LoSHrs'].std()
+mode=calc_mode(csv, 'LoSHrs', 1, 0)
+median=csv['LoSHrs'].median()
+perc_25=csv['LoSHrs'].quantile(0.25)
+perc_75=csv['LoSHrs'].quantile(0.75)
+perc_95=csv['LoSHrs'].quantile(0.95)
+
+summary_df['Metric'] = ['mean','std','mode','25 perc','median','75 perc','95 perc']
+summary_df['Real data'] = [mean,std,mode,perc_25, median,perc_75,perc_95]
+
+display(summary_df)
+```
+
+## Representing Inpatient LoS in the model
+Ideally we want the default lengths of stay of patients in the model to match as closely
+as possible to our real data. I've assumed the lognormal distribution will have
+the best fit of all the types I could have chosen (would be good to check if this
+assumption is correct). The sim tools implementation of the lognormal distribution
+takes mean and standard deviation as input. If we use the mean and st. dev from
+the real data above the fit as as below:
+
+```{python}
+# Comparison - real and modelled scenario 1
+fig_list=hist_compare_real_model("../data/los_fy2425.csv", mean, std)
+fig=fig_list[0]
+fig.update_layout(title = f'Real vs Modelled Dist (Matched Mean/Std)')
+fig.show()
+
+# Be good to also produce a summary table
+```
+
+This fit doesn't seem perfect as the mode (peak) of the distribution doesn't seem
+in quite the right place. It seems better when I fix the mode to the real mode of
+the data and then adjust the thickness of the tail as below:
+
+```{python}
+# Comparison - real and fixed mode modelled
+mode=16
+mean_list, std_list = make_lognormal_lists(mode, 20)
+fig_list=hist_compare_real_model("../data/los_fy2425.csv", mean_list, std_list)
+fig=fig_list[12]
+fig.update_layout(title = f'Real vs Modelled Dist (Matched Mode)')
+fig.show()
+```
+
+## Adjusting Inpatient LoS in the model
+This is much trickier than adjusting the other model input parameters as it is a 
+distribution with a complex shape rather than just a count. When we say 'decreased
+LoS' we need to have a clear idea of how we expect the shape of the distribution
+to change. As an illustration the 3 distributions below all have the same mean but
+are obviously very different!!!
+
+```{python}
+# Comparison - same mean, different distribution
+mean_list1 = [mean, mean, mean]
+std_list1=[200, 350, 750]
+visualise_lognormal_hist_list(mean_list1, std_list1, 70000)
+```
+
+What I have assumed we mean by 'decreased LoS' is the mode (peak) staying in
+approximately the same position, but the tail of the distribution becoming
+thinner. The practical interpretation of this is that patients who are admitted
+for short amounts of time (e.g overnight), there isn't alot of wiggle room for making their stays 
+much shorter, whereas for patients who are in for multiple days there is more
+potential for making their stays shorter by reduction of discharge delays. This
+is just an assumption I've made. See the 3 examples below for how I'm interpreting
+increased and decreased length of stay in the model.
+
+```{python}
+# Comparison - 3 plots central scenario, thick tail, thin tail
+mode=16
+mean_list, std_list = make_lognormal_lists(mode, 20)
+fig_list=hist_compare_real_model("../data/los_fy2425.csv", mean_list, std_list)
+fig=fig_list[12]
+fig.update_layout(title = f'Real vs Modelled Dist (Default Fit)')
+fig.show()
+
+fig=fig_list[5]
+fig.update_layout(title = f'Real vs Modelled Dist (Decreased LoS)')
+fig.show()
+
+fig=fig_list[19]
+fig.update_layout(title = f'Real vs Modelled Dist (Increased LoS)')
+fig.show()
+```
+
+```{python}
+# Table of values 3 scenarios
+```
+
+Here are all 12 LoS scenarios we can simulate for reduced and increased LoS.
+
+```{python}
+# Comparison - 12 plots central scenario, thick tail, thin tail
+```
+
+```{python}
+# Table of values 12 scenarios
+```
