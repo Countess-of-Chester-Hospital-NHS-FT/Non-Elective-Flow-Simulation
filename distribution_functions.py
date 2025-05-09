@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-from app.model import g, Trial
+#from app.model import g, Trial
 from scipy import stats
 from scipy.stats import lognorm
 from sim_tools.distributions import (Exponential, Lognormal, Uniform)
@@ -74,20 +74,25 @@ def visualise_lognormal(mean_list, std_list):
 #visualise_lognormal(mean_list, std_list)
 
 ## Compare theoretical distributions with each other as histograms
-def visualise_lognormal_hist_list(mean_list, std_list, samples):
+def visualise_lognormal_hist_list(mean_list, std_list, samples, random_seed):
     if isinstance(mean_list, (int, float)):
         mean_list = [mean_list]
     if isinstance(std_list, (int, float)):
         std_list = [std_list]
+    fig_list=[]
+    list_of_summary_lists=[]
     #fig = go.Figure()
     for i in range(len(mean_list)):
         fig = go.Figure()
 
-        dist = Lognormal(mean_list[i], std_list[i], random_seed = 5)
+        dist = Lognormal(mean_list[i], std_list[i], random_seed = random_seed)
         sample_list=[]
         for j in range(samples):
             sample = dist.sample()
             sample_list.append(sample)
+        
+        dist_summary_list=samples_to_summary_list(sample_list)
+        list_of_summary_lists.append(dist_summary_list)
 
         print(f'Distribution {i}: Mean={mean_list[i]}, STD={std_list[i]}') 
 
@@ -99,7 +104,10 @@ def visualise_lognormal_hist_list(mean_list, std_list, samples):
         fig.update_traces(xbins=dict(start=0, end=2000, size=5))
 
         fig.update_xaxes(range=[0, 2000])
-        fig.show()
+        #fig.show()
+        fig_list.append(fig)
+
+    return fig_list, list_of_summary_lists
 
 #mean_list, std_list = make_lognormal_lists(18, 2)
 #visualise_lognormal_hist_list(250, 374.1, 70000)
@@ -107,22 +115,29 @@ def visualise_lognormal_hist_list(mean_list, std_list, samples):
 
 
 ### Compare real distribution with a list of theoretical distributions
-def hist_compare_real_model(filepath, mean_list, std_list):
+
+def hist_compare_real_model(filepath, mean_list, std_list, random_seed):
     if isinstance(mean_list, (int, float)):
         mean_list = [mean_list]
     if isinstance(std_list, (int, float)):
         std_list = [std_list]
     csv = pd.read_csv(filepath)
-    samples = csv.shape[0]
+    samples = csv.shape[0] # counts the number of rows in real data
     fig = go.Figure()
     fig_list=[]
+    list_of_summary_lists=[]
+    real_summary_list=samples_to_summary_list(csv['LoSHrs'])
+    list_of_summary_lists.append(real_summary_list)
     for i in range(len(mean_list)):
         #print(f'Distribution {i}: Mean={mean_list[i]}, STD={std_list[i]}') 
-        dist = Lognormal(mean_list[i], std_list[i], random_seed = 5)
+        dist = Lognormal(mean_list[i], std_list[i], random_seed = random_seed)
         sample_list=[]
         for j in range(samples):
             sample = dist.sample()
             sample_list.append(sample)
+        
+        dist_summary_list=samples_to_summary_list(sample_list)
+        list_of_summary_lists.append(dist_summary_list)
 
         fig = go.Figure()
         fig.add_trace(go.Histogram(
@@ -142,33 +157,50 @@ def hist_compare_real_model(filepath, mean_list, std_list):
         #fig.show()
         fig_list.append(fig)
 
-    return fig_list
+    return fig_list, list_of_summary_lists
 
-#mean_list, std_list = make_lognormal_lists(16, 20)
-#hist_compare_real_model("data/los_fy2425.csv", 201.85, 353.05)
-#fig_list[12].show()
-#fig_list = hist_compare_real_model("data/los_fy2425.csv", mean_list, std_list)
-#fig_list[12].show()
-#for i in range(len(fig_list)):
-    #fig_list[i].show()
-
-### mode function
-def calc_mode(df, column, bin_size, min_bin_edge):
-    vmax = df[f'{column}'].max()
+#for use with series
+def calc_mode(pdseries, bin_size, min_bin_edge):
+    vmax = pdseries.max()
     bins = np.arange(min_bin_edge, vmax + bin_size, bin_size)
     labels = [f"{int(b)}–{int(b + bin_size)}" for b in bins[:-1]]
-    df['binned']= pd.cut(df[f'{column}'], bins=bins, labels=labels)
-    mode_bin = df['binned'].mode()[0]
+    binned = pd.Series()
+    binned= pd.cut(pdseries, bins=bins, labels=labels)
+    mode_bin = binned.mode()[0]
     #print(f"Mode of bins: {mode_bin}")
     return mode_bin
 
+
+
 #csv=pd.read_csv("data/los_fy2425.csv")
 #calc_mode(csv,'LoSHrs', 1, 0)
-# dist = Lognormal(215, 355, random_seed = 5)
-# sample_list=[]
-# for j in range(70000):
-#     sample = dist.sample()
-#     sample_list.append(sample)
+dist = Lognormal(215, 355, random_seed = 5)
+sample_list=[]
+for j in range(70000):
+    sample = dist.sample()
+    sample_list.append(sample)
+
+def samples_to_summary_list(sample_list):
+
+    sample_list = pd.Series(sample_list)
+
+    mean=sample_list.mean()
+    std=sample_list.std()
+    mode=calc_mode(sample_list, 1, 0)
+    median=sample_list.median()
+    perc_25=sample_list.quantile(0.25)
+    perc_75=sample_list.quantile(0.75)
+    perc_95=sample_list.quantile(0.95)
+
+    summary_list = [mean,std,mode,perc_25,median,perc_75,perc_95]
+    return summary_list
+
+def summary_lists_to_table(list_of_lists):
+    labels=['mean','std','mode','25 perc','median','75 perc','95 perc']
+    summary_df=pd.DataFrame(labels, columns=['Metric'])
+    for i in range(len(list_of_lists)):
+        summary_df[f'LoS Dist {i - 1}']=list_of_lists[i]
+    return summary_df
 
 
 
