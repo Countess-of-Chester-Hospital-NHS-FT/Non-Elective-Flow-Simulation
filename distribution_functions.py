@@ -115,7 +115,6 @@ def visualise_lognormal_hist_list(mean_list, std_list, samples, random_seed):
 
 
 ### Compare real distribution with a list of theoretical distributions
-
 def hist_compare_real_model(filepath, mean_list, std_list, random_seed):
     if isinstance(mean_list, (int, float)):
         mean_list = [mean_list]
@@ -142,18 +141,19 @@ def hist_compare_real_model(filepath, mean_list, std_list, random_seed):
         fig = go.Figure()
         fig.add_trace(go.Histogram(
             x=csv['LoSHrs'],
-            name='Real',
-            opacity=0.3
+            name='Real'
+            #opacity=0.3
         ))
         #fig.update_traces(xbins=dict(start=0, end=2000, size=5))
         fig.add_trace(go.Histogram(
             x=sample_list,
-            name = f'Modelled',
-                    opacity=0.3
+            name = f'Modelled'
+                    #opacity=0.3
         ))
         fig.update_traces(xbins=dict(start=0, end=2000, size=24))
         fig.update_xaxes(range=[0, 2000])
-        fig.update_layout(title = f'Real vs Modelled Dist {i}')
+        fig.update_layout(title = f'Real vs Modelled Dist {i}',
+                          template='plotly_white')
         #fig.show()
         fig_list.append(fig)
 
@@ -186,7 +186,7 @@ def samples_to_summary_list(sample_list):
 
     mean=sample_list.mean()
     std=sample_list.std()
-    mode=calc_mode(sample_list, 1, 0)
+    mode=calc_mode(sample_list, 2, 0)
     median=sample_list.median()
     perc_25=sample_list.quantile(0.25)
     perc_75=sample_list.quantile(0.75)
