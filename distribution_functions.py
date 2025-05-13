@@ -56,17 +56,37 @@ def visualise_lognormal(mean_list, std_list):
     # # Define a common x-axis range
     x_min = 0
     x_max = 800 #max(mean_list) + 4 * max(std_list)
-
+    x = np.linspace(x_min, x_max, 500)
     fig = go.Figure()
+
+    dist_list=[]
+    median_list=[]
+    mode_list=[]
+    sigma_list=[]
     
     for i in range(len(mean_list)):
         pdf, sigma, median, mode = make_lognormal_trace(mean_list[i], std_list[i], x_min, x_max)
-        print(f'Distribution {i}: Mean={mean_list[i]}, STD={std_list[i]}, Median={median:.2f},' 
-        f'Mode={mode:.2f}, Sigma={sigma:.2f}')
+        #print(f'Distribution {i}: Mean={mean_list[i]}, STD={std_list[i]}, Median={median:.2f},' 
+        #f'Mode={mode:.2f}, Sigma={sigma:.2f}')
         fig.add_trace(go.Scatter(x=x, y=pdf, mode='lines', name=f'Mean {mean_list[i]}, STD {std_list[i]:.1f}'))
+        dist=f'Distribution {i}'
+        dist_list.append(dist)
+        median_list.append(median)
+        mode_list.append(mode)
+        sigma_list.append(sigma)
+
+    df= pd.DataFrame(
+        {'Distribution':pd.Series(dist_list),
+         'Mean':pd.Series(mean_list),
+         'Std':pd.Series(std_list),
+         'Median':pd.Series(median_list),
+         'Mode':pd.Series(mode_list),
+         'Sigma':pd.Series(sigma_list)}
+    )
 
     fig.update_layout(showlegend=False)
-    fig.show()
+    #fig.show()
+    return fig, df
 
 #visualise_lognormal(215, 374.1)
 
@@ -94,16 +114,17 @@ def visualise_lognormal_hist_list(mean_list, std_list, samples, random_seed):
         dist_summary_list=samples_to_summary_list(sample_list)
         list_of_summary_lists.append(dist_summary_list)
 
-        print(f'Distribution {i}: Mean={mean_list[i]}, STD={std_list[i]}') 
+        #print(f'Distribution {i}: Mean={mean_list[i]}, STD={std_list[i]}') 
 
         fig.add_trace(go.Histogram(
             x=sample_list,
             name = f'Dist {i}',
-            opacity=0.3
+            #opacity=0.3
         ))
         fig.update_traces(xbins=dict(start=0, end=2000, size=5))
 
         fig.update_xaxes(range=[0, 2000])
+        fig.update_layout(template='plotly_white')
         #fig.show()
         fig_list.append(fig)
 
