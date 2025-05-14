@@ -24,7 +24,7 @@ from IPython.display import display
 ![](../app/img/model_diagram.png)
 
 ## Model recap
-![](input_sliders.png)
+![](docs_img/input_sliders.png)
 
 
 ## This is our real LoS distribution
@@ -204,7 +204,7 @@ fig.show()
 :::
 
 ::: {.column width="40%"}
-![](model_code.png)
+![](docs_img/model_code.png)
 :::
 
 ::::
