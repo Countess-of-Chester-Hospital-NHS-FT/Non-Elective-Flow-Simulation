@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 #from app.model import g, Trial
 from scipy import stats
 from scipy.stats import lognorm
-from sim_tools.distributions import (Exponential, Lognormal, Uniform)
+from sim_tools.distributions import (Exponential, Lognormal, Uniform, Normal)
 
 # Make list of theoretical distributions, constant mean but changing tail thickness
 def make_lognormal_lists(mode_target, len):
@@ -223,6 +223,42 @@ def summary_lists_to_table(list_of_lists):
         summary_df[f'LoS Dist {i - 1}']=list_of_lists[i]
     return summary_df
 
+## Compare theoretical distributions with each other as histograms
+def visualise_normal_hist_list(mean_list, std_list, samples, random_seed):
+    if isinstance(mean_list, (int, float)):
+        mean_list = [mean_list]
+    if isinstance(std_list, (int, float)):
+        std_list = [std_list]
+    fig_list=[]
+    list_of_summary_lists=[]
+    #fig = go.Figure()
+    for i in range(len(mean_list)):
+        fig = go.Figure()
+
+        dist = Normal(mean_list[i], std_list[i], random_seed = random_seed)
+        sample_list=[]
+        for j in range(samples):
+            sample = dist.sample()
+            sample_list.append(sample)
+        
+        dist_summary_list=samples_to_summary_list(sample_list)
+        list_of_summary_lists.append(dist_summary_list)
+
+        #print(f'Distribution {i}: Mean={mean_list[i]}, STD={std_list[i]}') 
+
+        fig.add_trace(go.Histogram(
+            x=sample_list,
+            name = f'Dist {i}',
+            #opacity=0.3
+        ))
+        fig.update_traces(xbins=dict(start=0, end=2000, size=5))
+
+        fig.update_xaxes(range=[0, 2000])
+        fig.update_layout(template='plotly_white')
+        #fig.show()
+        fig_list.append(fig)
+
+    return fig_list, list_of_summary_lists
 
 
 
