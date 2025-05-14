@@ -17,6 +17,7 @@ class g: # global
     sim_duration = 86400 
     warm_up_period = (300 * 24 * 60) #convert days into minutes
     number_of_runs = 10
+    reneging = 0 #allow reneging behaviour to be switched on or off
 
 class Patient:
     def __init__(self, p_id):
@@ -101,24 +102,19 @@ class Model:
              'event' : 'admission_wait_begins',
              'time' : self.env.now}
         )
+        if g.reneging == 0: #if there is no reneging
+            bed_resource = yield self.nelbed.get(priority=patient.priority)
 
-        bed_resource = self.nelbed.get(priority=patient.priority)
-
-        # Wait until one of 3 things happens....
-        result_of_queue = (yield bed_resource | # they get a bed
-                            self.env.timeout(patient.inpatient_exp_los)) # they renege
-
-        if bed_resource in result_of_queue:
             self.event_log.append(
-            {'patient' : patient.id,
-            'pathway' : patient.department,
-            'event_type' : 'resource_use',
-            'event' : 'admission_begins',
-            'time' : self.env.now,
-            'resource_id' : result_of_queue[bed_resource].id_attribute
-            }
-            )
-                    
+                {'patient' : patient.id,
+                'pathway' : patient.department,
+                'event_type' : 'resource_use',
+                'event' : 'admission_begins',
+                'time' : self.env.now,
+                'resource_id' : bed_resource.id_attribute
+                }
+                )
+        
             sampled_bed_time = patient.inpatient_los
             yield self.env.timeout(sampled_bed_time)
 
@@ -128,31 +124,72 @@ class Model:
             'event_type' : 'resource_use_end',
             'event' : 'admission_complete',
             'time' : self.env.now,
-            'resource_id' : result_of_queue[bed_resource].id_attribute
+            'resource_id' : bed_resource.id_attribute
             }
             )
 
-            self.nelbed.put(result_of_queue[bed_resource])
-        
-    # # If patient reneges
-        else:
-            bed_resource.cancel() # SR - Think we need to ensure original request is cancelled at this point
+            self.nelbed.put(bed_resource)
+
             self.event_log.append(
-                {'patient' : patient.id,
-                'pathway' : patient.department,
-                'event_type' : 'arrival_departure',
-                'event' : 'renege',
-                'time' : self.env.now,
-                }
-                )
-            
-        self.event_log.append(
             {'patient' : patient.id,
             'pathway' : patient.department,
             'event_type' : 'arrival_departure',
             'event' : 'depart',
             'time' : self.env.now}
             )
+
+        else: # if reneging is turned on
+            bed_resource = self.nelbed.get(priority=patient.priority)
+
+            # Wait until one of 3 things happens....
+            result_of_queue = (yield bed_resource | # they get a bed
+                                self.env.timeout(patient.inpatient_exp_los)) # they renege
+
+            if bed_resource in result_of_queue:
+                self.event_log.append(
+                {'patient' : patient.id,
+                'pathway' : patient.department,
+                'event_type' : 'resource_use',
+                'event' : 'admission_begins',
+                'time' : self.env.now,
+                'resource_id' : result_of_queue[bed_resource].id_attribute
+                }
+                )
+                        
+                sampled_bed_time = patient.inpatient_los
+                yield self.env.timeout(sampled_bed_time)
+
+                self.event_log.append(
+                {'patient' : patient.id,
+                'pathway' : patient.department,
+                'event_type' : 'resource_use_end',
+                'event' : 'admission_complete',
+                'time' : self.env.now,
+                'resource_id' : result_of_queue[bed_resource].id_attribute
+                }
+                )
+
+                self.nelbed.put(result_of_queue[bed_resource])
+            
+        # # If patient reneges
+            else:
+                bed_resource.cancel() # SR - Think we need to ensure original request is cancelled at this point
+                self.event_log.append(
+                    {'patient' : patient.id,
+                    'pathway' : patient.department,
+                    'event_type' : 'arrival_departure',
+                    'event' : 'renege',
+                    'time' : self.env.now,
+                    }
+                    )
+                
+            self.event_log.append(
+                {'patient' : patient.id,
+                'pathway' : patient.department,
+                'event_type' : 'arrival_departure',
+                'event' : 'depart',
+                'time' : self.env.now}
+                )
     
     def attend_other(self, patient):
         self.event_log.append(
@@ -252,35 +289,97 @@ class Trial:
         if "renege" not in df.columns:
             df["renege"] = np.nan
         self.patient_df = df
-        self.patient_df_nowarmup = df[df["arrival"] > g.warm_up_period]
+        #self.patient_df_nowarmup = df[df["arrival"] > g.warm_up_period]
+        # self.patient_df_nowarmup = df[(df["arrival"] > g.warm_up_period) 
+        #                  | (df["admission_begins"] > g.warm_up_period)
+        #                  | (df["renege"] > g.warm_up_period)]
+        # columns_to_check = [
+        # 'admission_begins', 'admission_complete', 'admission_wait_begins',
+        # 'arrival', 'depart', 'treatment_time', 'renege'
+        # ]
+        # self.patient_df_nowarmup = df[df[columns_to_check].gt(g.warm_up_period).any(axis=1)]
 
     def summarise_runs(self):
-        run_summary = self.patient_df_nowarmup
+        run_summary = self.patient_df
         # note that q_time is na where a patient is not admitted so is automatically omitted from summary calcs
         run_summary = run_summary.groupby("run").agg(
-            total_demand=("patient", "count"),
-            ed_demand=("patient", lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].count()),
-            ed_admissions=("patient", lambda x: x[(self.patient_df_nowarmup["pathway"] == "ED") & (~pd.isna(self.patient_df_nowarmup["admission_begins"]))].count()),
-            reneged=("renege", lambda x: x.notna().sum()),
-            ed_mean_qtime=("q_time",
-                            lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].mean() / 60.0),
-            ed_sd_qtime=("q_time",
-                            lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].std() / 60.0),
-            ed_min_qtime=("q_time",
-                            lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].min() / 60.0),
-            ed_max_qtime=("q_time",
-                            lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].max() / 60.0),
-            ed_95=("q_time",
-                            lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].quantile(0.95) / 60.0),
-            dtas_12hr=("q_time", lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].gt(12 * 60).sum() / (g.sim_duration/1440)),
-            under_4hr=("q_time", lambda x: x[self.patient_df_nowarmup["pathway"] == "ED"].lt(4 * 60).sum()),
-            sdec_admissions=("pathway", lambda x: x[(self.patient_df_nowarmup["pathway"] == "SDEC") & (~pd.isna(self.patient_df_nowarmup["admission_begins"]))].count())
+            total_demand=("arrival", lambda x: (x > g.warm_up_period).sum()),
+            discharges=("patient", lambda x: (
+                        ((run_summary.loc[x.index, "admission_complete"] > g.warm_up_period))
+                        .sum())),
+            
+            #("admission_complete", lambda x: (x > g.warm_up_period).sum()),
+            ed_demand=("patient", lambda x: (
+                        ((run_summary.loc[x.index, "arrival"] > g.warm_up_period
+                        ) & (run_summary.loc[x.index, "pathway"] == "ED")).sum())),
+            ed_admissions=("patient", lambda x: (
+                        ((run_summary.loc[x.index, "admission_begins"] > g.warm_up_period
+                        ) & (run_summary.loc[x.index, "pathway"] == "ED")).sum())),
+            reneged=("renege", lambda x: (x > g.warm_up_period).sum()),
+            ed_mean_qtime=("q_time", lambda x: (
+                        x[
+                            (run_summary.loc[x.index, "admission_begins"] > g.warm_up_period) &
+                            (run_summary.loc[x.index, "pathway"] == "ED") &
+                            x.notna()
+                        ].mean() / 60.0
+            )),
+            ed_sd_qtime=("q_time", lambda x: (
+                        x[
+                            (run_summary.loc[x.index, "admission_begins"] > g.warm_up_period) &
+                            (run_summary.loc[x.index, "pathway"] == "ED") &
+                            x.notna()
+                        ].std() / 60.0
+            )),
+            ed_min_qtime=("q_time", lambda x: (
+                        x[
+                            (run_summary.loc[x.index, "admission_begins"] > g.warm_up_period) &
+                            (run_summary.loc[x.index, "pathway"] == "ED") &
+                            x.notna()
+                        ].min() / 60.0
+            )),
+            ed_max_qtime=("q_time", lambda x: (
+                        x[
+                            (run_summary.loc[x.index, "admission_begins"] > g.warm_up_period) &
+                            (run_summary.loc[x.index, "pathway"] == "ED") &
+                            x.notna()
+                        ].max() / 60.0
+            )),
+            ed_95=("q_time", lambda x: (
+                np.percentile(
+                    x[
+                        (run_summary.loc[x.index, "admission_begins"] > g.warm_up_period) &
+                        (run_summary.loc[x.index, "pathway"] == "ED") &
+                        x.notna()
+                    ],
+                    95
+                ) / 60.0
+            )),
+            dtas_12hr=("q_time", lambda x: (
+                        x[
+                            (run_summary.loc[x.index, "admission_begins"] > g.warm_up_period) &
+                            (run_summary.loc[x.index, "pathway"] == "ED") &
+                            x.notna()
+                        ].gt(12 * 60).sum() / (g.sim_duration/1440)
+            )),
+                        #.gt(12 * 60).sum())) / (g.sim_duration/1440),
+            under_4hr=("q_time", lambda x: (
+                        x[
+                            (run_summary.loc[x.index, "admission_begins"] > g.warm_up_period) &
+                            (run_summary.loc[x.index, "pathway"] == "ED") &
+                            x.notna()
+                        ].lt(4 * 60).sum() / (g.sim_duration/1440)
+            )),
+                        #) & (run_summary.loc[x.index, "pathway"] == "ED")).lt(4 * 60).sum())),
+            sdec_admissions=("patient", lambda x: (
+                        ((run_summary.loc[x.index, "admission_begins"] > g.warm_up_period
+                        ) & (run_summary.loc[x.index, "pathway"] == "SDEC")).sum()))
         )
         run_summary["admitted_perf_4hr"]=(run_summary["under_4hr"] / run_summary["ed_admissions"])*100 #
         run_summary["total_perf_4hr"]=(run_summary["under_4hr"] / run_summary["ed_demand"])*100
         run_summary=run_summary.drop(columns=["ed_demand", "under_4hr", "ed_sd_qtime"])
         run_summary=run_summary.rename(columns={
             'total_demand':'Total Admission Demand',
+            'discharges':'Total Discharges',
             'ed_admissions': 'Admissions via ED',
             'reneged': 'Reneged',
             'ed_mean_qtime':'Mean Q Time (Hrs)',
