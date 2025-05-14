@@ -3,7 +3,6 @@ __pycache__/
 *.pyc
 
 # Exclude the following directories
-/docs/los_files/
 
 # Exclude data file types
 *.doc
