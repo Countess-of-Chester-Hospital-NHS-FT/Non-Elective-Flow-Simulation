@@ -1,0 +1,422 @@
+---
+title: "Non-Elective Flow Model Documentation"
+execute:
+  echo: false
+format:
+    html:
+        toc: true
+        embed-resources: true
+---
+```{python}
+#| label: library-imports
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import sys
+import os
+root_dir = os.path.abspath(os.path.join(os.getcwd(), '..'))
+sys.path.append(root_dir)
+from app.model import g, Trial
+import plotly.graph_objects as go
+import distribution_functions
+from plotly.subplots import make_subplots
+
+```
+
+# Inpatient Length of Stay (LoS)
+Inpatient length of stay (the amount of time a patient stays in a bed) is a key
+input to the model and a key target of flow improvement management strategies.
+
+## Real LoS Distribution (FY 24/25)
+Here are 2 histograms showing real inpatient LoS data from FY 24/25 with different
+levels of granularity. Looking at the example with narrow bins shows an approximately
+lognormal distribution and also shows a very jagged pattern! This is likely because
+patients are normally admitted and discharged during the day, making some los values
+much more unlikely.
+
+The model currently makes the assumption patients can be admitted and discharged
+at any time so for the purposes of fitting the distributions I am going to use the
+less granular 24hr binsize histogram which shows how many patients were admitted for 1 day,
+2 days etc.
+
+```{python}
+csv = pd.read_csv("../data/los_fy2425.csv")
+binsize = [5, 24]
+colours='#636EFA'
+
+# Create a subplot with 1 row and 2 columns
+fig = make_subplots(rows=2, cols=1, subplot_titles=[f'Binsize: {binsize[0]} hrs', f'Binsize: {binsize[1]} hrs'])
+
+for i in range(len(binsize)):
+    hist = go.Histogram(
+        x=csv['LoSHrs'],
+        #name=f'Real {binsize[i]} hrs',
+        xbins=dict(start=0, end=2000, size=binsize[i]),
+        marker_color=colours
+        )
+    fig.add_trace(hist, row=i+1, col=1)
+
+fig.update_xaxes(range=[0, 2000])
+fig.update_layout(
+    title={
+        'text': 'Real Inpatient LoS Distribution (FY 24/25)',
+        'x': 0.5,
+        'y': 0.99,
+        'xanchor': 'center',
+        'yanchor':'top'
+    },
+    xaxis_title='Hours',
+    yaxis_title='Count',
+    template='plotly_white',
+    showlegend=False
+)
+
+# Adjust subplot title positions to prevent overlap with main title
+for annotation in fig['layout']['annotations']:
+    if 'Binsize' in annotation['text']:
+        annotation['y'] -= 0.05  # Adjust as necessary
+
+fig.show()
+```
+
+```{python}
+# table of summary metrics
+summary=distribution_functions.samples_to_summary_list(csv['LoSHrs'])
+summary=[summary]
+summary_table=distribution_functions.summary_lists_to_table(summary)
+summary_table=summary_table.rename(columns={'LoS Dist -1':'Real LoS'})
+summary_table.set_index('Metric', inplace=True)
+display(summary_table)
+```
+
+## Representing Inpatient LoS in the model
+Ideally we want the default lengths of stay of patients in the model to match as closely
+as possible to our real data. I've assumed the lognormal distribution will have
+the best fit of all the types I could have chosen (would be good to check if this
+assumption is correct). The sim tools implementation of the lognormal distribution
+takes mean and standard deviation as input. If we use the mean and st. dev from
+the real data above the fit is shown in the upper chart below.
+
+This fit doesn't seem perfect, especially for values under 6 days. It seems better when I fix the mode to the real mode of the data and then adjust the thickness of the tail
+which I have done in the second plot.
+
+```{python}
+# This cell collects the figures and summaries of the 2 modelling methods
+mean = summary_table.loc['mean', 'Real LoS']
+std = summary_table.loc['std', 'Real LoS']
+fig_list1, list_of_summary_lists1=distribution_functions.hist_compare_real_model("../data/los_fy2425.csv", mean, std, 5)
+fig1=fig_list1[0]
+
+mode=16
+mean_list, std_list = distribution_functions.make_lognormal_lists(mode, 20)
+fig_list2, list_of_summary_lists2=distribution_functions.hist_compare_real_model("../data/los_fy2425.csv", mean_list, std_list, 5)
+fig2=fig_list2[12]
+```
+
+```{python}
+# This cell makes a combined plot of 2 modelling attempts
+combined_fig = make_subplots(
+    rows=2, cols=1,
+    subplot_titles=("Matched Mean/Std", "Matched Mode/Tail - better fit?"),
+)
+
+color_map = {
+    "Real": "#636EFA",
+    "Modelled": "#FF1493"
+}
+
+legend_labels_added = set()
+
+# Helper function to clone a trace with enforced color
+def copy_trace_with_color(trace, row, col):
+    trace_copy = trace.__class__(**trace.to_plotly_json())
+    trace_copy.marker.color = color_map.get(trace.name, trace.marker.color)
+    if trace.name in legend_labels_added:
+        trace_copy.showlegend = False
+    else:
+        legend_labels_added.add(trace.name)
+    combined_fig.add_trace(trace_copy, row=row, col=col)
+
+# Add fig1 traces to subplot 1
+for trace in fig1.data:
+    copy_trace_with_color(trace, row=1, col=1)
+
+# Add fig2 traces to subplot 2
+for trace in fig2.data:
+    copy_trace_with_color(trace, row=2, col=1)
+
+combined_fig.update_layout(
+    title_text="Real vs Modelled Data (2 methods for modelling)",
+    legend_title_text="Legend",
+    template='plotly_white',
+    showlegend=True
+)
+
+# Adjust subplot title positions to prevent overlap with main title
+for annotation in combined_fig['layout']['annotations']:
+    if 'Matched' in annotation['text']:
+        annotation['y'] -= 0.05  # Adjust as necessary
+
+combined_fig.show()
+```
+
+```{python}
+### This cell creates a summary table
+compare_list=[list_of_summary_lists1[0], list_of_summary_lists1[1], list_of_summary_lists2[12]]
+summary_table1=distribution_functions.summary_lists_to_table(compare_list)
+summary_table1=summary_table1.rename(columns={'LoS Dist -1':'Real LoS'})
+summary_table1=summary_table1.rename(columns={'LoS Dist 0':'Modelled LoS (Matched Mean/Std)'})
+summary_table1=summary_table1.rename(columns={'LoS Dist 1':'Modelled LoS (Matched Mode/Tail)'})
+summary_table1.set_index('Metric', inplace=True)
+display(summary_table1)
+```
+
+## Adjusting Inpatient LoS in the model
+This is much trickier than adjusting the other model input parameters as it is a 
+distribution with a complex shape rather than just a count. When we say 'decreased
+LoS' we need to have a clear idea of how we expect the shape of the distribution
+to change. As an illustration the 3 distributions below all have the same mean but
+are obviously very different!!!
+
+```{python}
+# Comparison - same mean, different distribution
+# mean_list1 = [mean, mean, mean]
+# std_list1=[200, 350, 750]
+# fig_list, list_of_summary_lists=distribution_functions.visualise_lognormal_hist_list(mean_list1, std_list1, 70000, 5)
+
+# for fig in fig_list:
+#     fig.show()
+
+# summary_table1=distribution_functions.summary_lists_to_table(list_of_summary_lists)
+# #summary_table1=summary_table1.columns = ['LoS Dist 0', 'LoS Dist 1', 'LoS Dist 2']
+# summary_table1.set_index('Metric', inplace=True)
+# summary_table1.columns = ['LoS Dist 0', 'LoS Dist 1', 'LoS Dist 2']
+# display(summary_table1)
+
+```
+
+```{python}
+mean = summary_table.loc['mean', 'Real LoS']
+mean_list1 = [mean, mean, mean]
+std_list1=[200, 350, 750]
+fig_list3, list_of_summary_lists3=distribution_functions.visualise_lognormal_hist_list(mean_list1, std_list1, 70000, 5)
+
+combined_fig = make_subplots(
+    rows=3, cols=1,
+    subplot_titles=("Dist 0", "Dist 1", "Dist 3"),
+)
+
+for i in range(len(fig_list3)):
+    combined_fig.add_trace(fig_list3[i].data[0], row=i+1, col=1)
+
+combined_fig.update_layout(
+    title={
+        'text': 'Same mean, very different distributions',
+        'x': 0.5,
+        'y': 0.99,
+        'xanchor': 'center',
+        'yanchor':'top'
+    },
+    legend_title_text="Legend",
+    template='plotly_white',
+    showlegend=False,
+    height=800
+)
+
+# Adjust subplot title positions to prevent overlap with main title
+for annotation in combined_fig['layout']['annotations']:
+    if 'Dist' in annotation['text']:
+        annotation['y'] -= 0.025  # Adjust as necessary
+
+combined_fig.show()
+```
+
+```{python}
+summary_table1=distribution_functions.summary_lists_to_table(list_of_summary_lists3)
+#summary_table1=summary_table1.columns = ['LoS Dist 0', 'LoS Dist 1', 'LoS Dist 2']
+summary_table1.set_index('Metric', inplace=True)
+summary_table1.columns = ['LoS Dist 0', 'LoS Dist 1', 'LoS Dist 2']
+display(summary_table1)
+
+```
+
+What I have assumed we mean by 'decreased LoS' is the mode (peak) staying in
+approximately the same position, but the tail of the distribution becoming
+thinner. The practical interpretation of this is that patients who are admitted
+for short amounts of time (e.g overnight), there isn't alot of wiggle room for making their stays 
+much shorter, whereas for patients who are in for multiple days there is more
+potential for making their stays shorter by reduction of discharge delays. This
+is just an assumption I've made. See the 3 examples below for how I'm interpreting
+increased and decreased length of stay in the model.
+```{python}
+mode=16
+mean_list, std_list = distribution_functions.make_lognormal_lists(mode, 20)
+fig_list4, list_of_summary_lists4=distribution_functions.hist_compare_real_model("../data/los_fy2425.csv", mean_list, std_list, 5)
+
+
+combined_fig = make_subplots(
+    rows=3, cols=1,
+    subplot_titles=("Real vs Modelled Dist (Default Fit)",
+     "Real vs Modelled Dist (Decreased LoS)",
+     "Real vs Modelled Dist (Increased LoS)"),
+)
+
+color_map = {
+    "Real": "#636EFA",
+    "Modelled": "#FF1493"
+}
+
+legend_labels_added = set()
+
+# Helper function to clone a trace with enforced color
+def copy_trace_with_color(trace, row, col):
+    trace_copy = trace.__class__(**trace.to_plotly_json())
+    trace_copy.marker.color = color_map.get(trace.name, trace.marker.color)
+    if trace.name in legend_labels_added:
+        trace_copy.showlegend = False
+    else:
+        legend_labels_added.add(trace.name)
+    combined_fig.add_trace(trace_copy, row=row, col=col)
+
+# Add fig1 traces to subplot 1
+for trace in fig_list4[12].data:
+    copy_trace_with_color(trace, row=1, col=1)
+
+# Add fig2 traces to subplot 2
+for trace in fig_list4[5].data:
+    copy_trace_with_color(trace, row=2, col=1)
+
+# Add fig2 traces to subplot 2
+for trace in fig_list4[19].data:
+    copy_trace_with_color(trace, row=3, col=1)
+
+
+combined_fig.update_layout(
+    title={
+        'text': "Increasing and Decreasing LoS",
+        'x': 0.025,
+        'y': 0.99,
+        'xanchor': 'left',
+        'yanchor':'top'
+    },
+    #title_text="Increasing and Decreasing LoS",
+    legend_title_text="Legend",
+    template='plotly_white',
+    showlegend=True,
+    height=800
+)
+
+# Adjust subplot title positions to prevent overlap with main title
+for annotation in combined_fig['layout']['annotations']:
+    annotation['y'] -= 0.025
+
+combined_fig.show()
+```
+```{python}
+# Comparison - 3 plots central scenario, thick tail, thin tail
+# mode=16
+# mean_list, std_list = distribution_functions.make_lognormal_lists(mode, 20)
+# fig_list, list_of_summary_lists=distribution_functions.hist_compare_real_model("../data/los_fy2425.csv", mean_list, std_list, 5)
+# fig=fig_list[12]
+# fig.update_layout(title = f'Real vs Modelled Dist (Default Fit)')
+# fig.show()
+
+# fig=fig_list[5]
+# fig.update_layout(title = f'Real vs Modelled Dist (Decreased LoS)')
+# fig.show()
+
+# fig=fig_list[19]
+# fig.update_layout(title = f'Real vs Modelled Dist (Increased LoS)')
+# fig.show()
+
+compare_list=[list_of_summary_lists4[12], list_of_summary_lists4[5], list_of_summary_lists4[19]]
+summary_table1=distribution_functions.summary_lists_to_table(compare_list)
+summary_table1.set_index('Metric', inplace=True)
+summary_table1.columns = ['Default Scenario', 'Decreased LoS', 'Increased LoS']
+#summary_table1=summary_table1.rename(columns={'LoS Dist 0':'Modelled LoS'})
+#summary_table1.set_index('Metric', inplace=True)
+display(summary_table1)
+```
+
+
+Here are 20 LoS probability distributions I've generated keeping the mode constant
+and altering the tail thickness. I've chosen Distribution 12 as the closest to the
+real distribution (as above) which will used as the default scenario. Increasing
+or decreasing LoS in the model will move through these distributions.
+
+```{python}
+mode=16
+traces=20
+mean_list, std_list = distribution_functions.make_lognormal_lists(mode, traces)
+
+fig, df=distribution_functions.visualise_lognormal(mean_list, std_list)
+
+for i in range(traces):
+    trace=fig.data[i]
+    trace.name=f'Dist{i}'
+
+fig.update_layout(
+    template='plotly_white',
+    showlegend=True,
+    title_text='20 Probability Density functions with increasing tail thickness'
+)
+fig.show()
+display(df)
+```
+
+This is what sampling 20,000 samples from each of the probability distributions 
+looks like.
+
+```{python}
+# Comparison - 12 plots central scenario, thick tail, thin tail
+mode=16
+mean_list, std_list = distribution_functions.make_lognormal_lists(mode, 20)
+fig_list, list_of_summary_lists=distribution_functions.visualise_lognormal_hist_list(mean_list, std_list, 20000, 5)
+
+subplot_titles=[]
+
+for i in range(len(fig_list)):
+    title=f"Dist {i}"
+    subplot_titles.append(title)
+
+combined_fig = make_subplots(
+    rows=5, cols=4,
+    subplot_titles=subplot_titles
+)
+
+for i in range(len(fig_list)):
+    trace = fig_list[i].data[0]
+    trace.marker.color = '#636EFA'
+
+for i in range(len(fig_list)):
+    combined_fig.add_trace(fig_list[i].data[0], row=i // 4 + 1, col=i % 4 + 1)
+
+combined_fig.update_layout(
+    title={
+        'text': '20 Distributions with increasing LoS (20,000 samples)',
+        'x': 0.5,
+        'y': 0.99,
+        'xanchor': 'center',
+        'yanchor':'top'
+    },
+    #legend_title_text="Legend",
+    template='plotly_white',
+    showlegend=False,
+    height=1000
+)
+
+# Adjust subplot title positions to prevent overlap with main title
+for annotation in combined_fig['layout']['annotations']:
+    if 'Dist' in annotation['text']:
+        annotation['y'] -= 0.025  # Adjust as necessary
+
+combined_fig.show()
+```
+
+```{python}
+# Table of values 20 scenarios
+summary_table1=distribution_functions.summary_lists_to_table(list_of_summary_lists)
+summary_table1.set_index('Metric', inplace=True)
+summary_table1.columns = subplot_titles
+display(summary_table1)
+```
