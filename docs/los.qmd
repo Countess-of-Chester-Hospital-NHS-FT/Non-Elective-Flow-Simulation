@@ -27,7 +27,7 @@ from IPython.display import display
 ![](docs_img/input_sliders.png)
 
 
-## This is our real LoS distribution
+## This is our real LoS distribution 
 
 ```{python}
 csv = pd.read_csv("../data/los_fy2425.csv")

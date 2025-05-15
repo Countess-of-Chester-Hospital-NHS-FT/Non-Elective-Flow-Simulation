@@ -72,7 +72,7 @@ with tab1:
 
     if button_run_pressed:
         with st.spinner("Simulating the system"):
-            all_event_logs, patient_df, patient_df_nowarmup, run_summary_df, trial_summary_df = Trial().run_trial()
+            all_event_logs, patient_df, run_summary_df, trial_summary_df = Trial().run_trial()
             
             # Adding to session state objects so we can compare scenarios
             #st.session_state['event_logs'] = all_event_logs
@@ -108,7 +108,8 @@ with tab1:
             ###################
             
             #filter dataset to ED
-            ed_df_nowarmup = patient_df_nowarmup[patient_df_nowarmup["pathway"] == "ED"]
+            ed_df_nowarmup = patient_df[(patient_df["pathway"] == "ED")
+                                         & (patient_df["admission_begins"] > g.warm_up_period)]
 
             #Create the histogram
             if ed_df_nowarmup['q_time_hrs'].mean() > 1 :
