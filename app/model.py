@@ -17,7 +17,7 @@ class g: # global
     sim_duration = 86400 
     warm_up_period = (300 * 24 * 60) #convert days into minutes
     number_of_runs = 10
-    reneging = 0 #allow reneging behaviour to be switched on or off
+    reneging = 1 #allow reneging behaviour to be switched on or off
 
 class Patient:
     def __init__(self, p_id):
@@ -275,7 +275,7 @@ class Trial:
         self.wrangle_data()
         self.summarise_runs()
         self.summarise_trial()
-        return self.all_event_logs, self.patient_df, self.patient_df_nowarmup, self.run_summary_df, self.trial_summary_df
+        return self.all_event_logs, self.patient_df, self.run_summary_df, self.trial_summary_df
     
     def wrangle_data(self):
         df = self.all_event_logs[["patient", "event", "time", "run", "pathway"]]
@@ -290,7 +290,7 @@ class Trial:
             df["renege"] = np.nan
         self.patient_df = df
         #self.patient_df_nowarmup = df[df["arrival"] > g.warm_up_period]
-        # self.patient_df_nowarmup = df[(df["arrival"] > g.warm_up_period) 
+        #self.patient_df_nowarmup = df[(df["arrival"] > g.warm_up_period) 
         #                  | (df["admission_begins"] > g.warm_up_period)
         #                  | (df["renege"] > g.warm_up_period)]
         # columns_to_check = [
@@ -415,9 +415,9 @@ class Trial:
 #For testing
 #my_trial = Trial()
 #print(f"Running {g.number_of_runs} simulations......")
-# all_event_logs, patient_df, patient_df_nowarmup, run_summary_df, trial_summary_df =  my_trial.run_trial()
+#all_event_logs, patient_df, patient_df_nowarmup, run_summary_df, trial_summary_df =  my_trial.run_trial()
 # display(my_trial.all_event_logs.head(1000))
-#display(my_trial.patient_df.head(1000))
+# display(my_trial.patient_df.head(1000))
 # display(my_trial.patient_df_nowarmup.head(1000))
 # display(my_trial.run_summary_df)
 # display(my_trial.trial_summary_df)
