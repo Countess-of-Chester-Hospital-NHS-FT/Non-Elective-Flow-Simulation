@@ -25,6 +25,49 @@ if 'animation' not in st.session_state:
 st.title("Non-Elective Flow Virtual Hospital")
 st.header("(work in progress)")
 
+# set range of values for los slider
+mean_time_in_bed_list = [71.70702512540906,
+ 77.67821709676522,
+ 84.3216441668675,
+ 91.7236138377383,
+ 99.98285232546758,
+ 109.21245279909989,
+ 119.54215308465062,
+ 131.12100225362667,
+ 144.1204868652976,
+ 158.7382012645096,
+ 175.20216273322046,
+ 193.77589204127548,
+ 214.76440375750872,
+ 238.52127944356852,
+ 265.4570316348337,
+ 296.0490086340166,
+ 330.85314122321984,
+ 370.51789443142826,
+ 415.8008629304791,
+ 467.5885404997592]
+mean_int_in_bed_list=[round(x) for x in mean_time_in_bed_list]
+sd_time_in_bed_list = [93.99589861344424,
+ 106.14284374298829,
+ 120.092388493405,
+ 136.14474828182972,
+ 154.65489435740722,
+ 176.0433543928601,
+ 200.809293238283,
+ 229.54638524039055,
+ 262.9621106480747,
+ 301.90125988635043,
+ 347.3746187373278,
+ 400.59404470387994,
+ 463.0154427703999,
+ 536.3915236525158,
+ 622.8367002063936,
+ 724.9070745473875,
+ 845.6992237470541,
+ 988.9724496371688,
+ 1159.3003748078424,
+ 1362.2593153480746]
+
 with st.sidebar:
     daily_ed_adm_slider = st.slider("Adjust daily demand for admission via ED",
                                     min_value=25, max_value=55, value=38)
@@ -34,12 +77,12 @@ with st.sidebar:
                                     min_value=0, max_value=10, value=3)
     num_nelbeds_slider = st.slider("Adjust number of non-elective beds",
                                 min_value=380, max_value=500, value=446)
-    mean_los_slider = st.slider("Adjust mean inpatient LOS (hrs)",
-                                min_value=175, max_value=275, value=197)
+    mean_los_slider = st.select_slider("Adjust mean inpatient LOS (hrs)",
+                                options=mean_int_in_bed_list, 
+                                value=mean_int_in_bed_list[12],
+                                help="Values from a pre-calculated set of distributions - see los documentation")
     
     with st.expander("Advanced Parameters"):
-        sd_los_slider = st.slider("Adjust inpatient LOS standard deviation (hrs)",
-                                    min_value=300, max_value=450, value=343)
         num_runs_slider = st.slider("Adjust number of runs the model does",
                                      min_value=10, max_value=20, value=10)
         
@@ -53,10 +96,10 @@ with st.sidebar:
     (Access restricted to internal users.)
     
                 """)
-    
+# use function make_lognormal_lists from distribution_functions.py, mode=16, len=20
 
 g.mean_time_in_bed = (mean_los_slider * 60)
-g.sd_time_in_bed = (sd_los_slider * 60)
+g.sd_time_in_bed = (sd_time_in_bed_list[mean_int_in_bed_list.index(mean_los_slider)] * 60)
 g.number_of_nelbeds = num_nelbeds_slider
 g.ed_inter_visit = 1440/daily_ed_adm_slider
 g.sdec_inter_visit = 1440/daily_sdec_adm_slider if daily_sdec_adm_slider != 0 else 0
