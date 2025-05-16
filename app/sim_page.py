@@ -25,6 +25,7 @@ if 'animation' not in st.session_state:
 st.title("Non-Elective Flow Virtual Hospital")
 st.header("(work in progress)")
 
+# set range of values for los slider
 mean_time_in_bed_list = [71.70702512540906,
  77.67821709676522,
  84.3216441668675,
@@ -76,10 +77,10 @@ with st.sidebar:
                                     min_value=0, max_value=10, value=3)
     num_nelbeds_slider = st.slider("Adjust number of non-elective beds",
                                 min_value=380, max_value=500, value=446)
-    # mean_los_slider = st.slider("Adjust mean inpatient LOS (hrs)",
-    #                             min_value=0, max_value=19, value=12)
     mean_los_slider = st.select_slider("Adjust mean inpatient LOS (hrs)",
-                                options=mean_int_in_bed_list, value=mean_int_in_bed_list[12])
+                                options=mean_int_in_bed_list, 
+                                value=mean_int_in_bed_list[12],
+                                help="Values from a pre-calculated set of distributions - see los documentation")
     
     with st.expander("Advanced Parameters"):
         num_runs_slider = st.slider("Adjust number of runs the model does",
