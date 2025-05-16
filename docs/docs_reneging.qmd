@@ -1,0 +1,45 @@
+---
+title: "Non-Elective Flow Model Documentation"
+subtitle: "Reneging"
+execute:
+  echo: false
+format:
+    html:
+        toc: true
+        embed-resources: true
+---
+
+```{python}
+#| label: library-imports
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import sys
+import os
+root_dir = os.path.abspath(os.path.join(os.getcwd(), '..'))
+sys.path.append(root_dir)
+from app.model import g, Trial
+import plotly.graph_objects as go
+import distribution_functions
+from plotly.subplots import make_subplots
+
+```
+
+# Reneging
+In the model I have made some assumptions about how reneging (being discharged
+from the queue) works. Patients who have long waits for admission are under the
+care of the acute medical team and often receiving some of the care that they
+would otherwise have received on AMU. The longer they remain in ED, the more
+likely they are to have received the treatment they need and be discharged from
+the queue. It also makes logical sense that patients wouldn't wait in the queue
+forever if the waits are very long and never be discharged. They would receive
+treatment, even if that treatment was negatively impacted by waiting in the
+queue. I have assumed the length of time before a patient reneges is related to their expected los i.e sicker patients are likely to spend more time in hospital and if they are
+unable to be admitted will spend longer in the ED queue before they are discharged.
+I have also assumed that if, under perfect flow conditions, someone would have an
+overnight stay (~16hrs), if they are waiting on the corridor it would be longer
+than 16 hours before they renege as treatment will be much less efficient and the environment much worse than on AMU. I am assuming their los would be approx 48hrs longer.
+
+```{python}
+#los trace vs reneging trace
+```
