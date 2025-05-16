@@ -25,33 +25,6 @@ if 'animation' not in st.session_state:
 st.title("Non-Elective Flow Virtual Hospital")
 st.header("(work in progress)")
 
-with st.sidebar:
-    daily_ed_adm_slider = st.slider("Adjust daily demand for admission via ED",
-                                    min_value=25, max_value=55, value=38)
-    daily_sdec_adm_slider = st.slider("Adjust daily demand for admission via SDEC",
-                                    min_value=0, max_value=20, value=12)
-    daily_other_adm_slider = st.slider("Adjust daily demand for admission via other routes",
-                                    min_value=0, max_value=10, value=3)
-    num_nelbeds_slider = st.slider("Adjust number of non-elective beds",
-                                min_value=380, max_value=500, value=446)
-    mean_los_slider = st.slider("Adjust mean inpatient LOS (hrs)",
-                                min_value=0, max_value=19, value=12)
-    
-    with st.expander("Advanced Parameters"):
-        num_runs_slider = st.slider("Adjust number of runs the model does",
-                                     min_value=10, max_value=20, value=10)
-        
-    st.markdown("---")
-
-    st.markdown("""
-    #### Inputs for the real system:
-    
-    Inputs and outputs for the real system at the Countess of Chester Hospital
-    can be found on the [Non-Elective Flow Dashboard](https://app.powerbi.com/groups/9de122d9-f066-4bcf-aebf-74c9a499bcec/reports/c7d62a4c-145c-4b1b-b477-12782838b53a?ctid=37c354b2-85b0-47f5-b222-07b48d774ee3&pbi_source=linkShare)
-    (Access restricted to internal users.)
-    
-                """)
-# use function make_lognormal_lists from distribution_functions.py, mode=16, len=20
 mean_time_in_bed_list = [71.70702512540906,
  77.67821709676522,
  84.3216441668675,
@@ -72,6 +45,7 @@ mean_time_in_bed_list = [71.70702512540906,
  370.51789443142826,
  415.8008629304791,
  467.5885404997592]
+mean_int_in_bed_list=[round(x) for x in mean_time_in_bed_list]
 sd_time_in_bed_list = [93.99589861344424,
  106.14284374298829,
  120.092388493405,
@@ -93,8 +67,38 @@ sd_time_in_bed_list = [93.99589861344424,
  1159.3003748078424,
  1362.2593153480746]
 
-g.mean_time_in_bed = (mean_time_in_bed_list[mean_los_slider] * 60)
-g.sd_time_in_bed = (sd_time_in_bed_list[mean_los_slider] * 60)
+with st.sidebar:
+    daily_ed_adm_slider = st.slider("Adjust daily demand for admission via ED",
+                                    min_value=25, max_value=55, value=38)
+    daily_sdec_adm_slider = st.slider("Adjust daily demand for admission via SDEC",
+                                    min_value=0, max_value=20, value=12)
+    daily_other_adm_slider = st.slider("Adjust daily demand for admission via other routes",
+                                    min_value=0, max_value=10, value=3)
+    num_nelbeds_slider = st.slider("Adjust number of non-elective beds",
+                                min_value=380, max_value=500, value=446)
+    # mean_los_slider = st.slider("Adjust mean inpatient LOS (hrs)",
+    #                             min_value=0, max_value=19, value=12)
+    mean_los_slider = st.select_slider("Adjust mean inpatient LOS (hrs)",
+                                options=mean_int_in_bed_list, value=mean_int_in_bed_list[12])
+    
+    with st.expander("Advanced Parameters"):
+        num_runs_slider = st.slider("Adjust number of runs the model does",
+                                     min_value=10, max_value=20, value=10)
+        
+    st.markdown("---")
+
+    st.markdown("""
+    #### Inputs for the real system:
+    
+    Inputs and outputs for the real system at the Countess of Chester Hospital
+    can be found on the [Non-Elective Flow Dashboard](https://app.powerbi.com/groups/9de122d9-f066-4bcf-aebf-74c9a499bcec/reports/c7d62a4c-145c-4b1b-b477-12782838b53a?ctid=37c354b2-85b0-47f5-b222-07b48d774ee3&pbi_source=linkShare)
+    (Access restricted to internal users.)
+    
+                """)
+# use function make_lognormal_lists from distribution_functions.py, mode=16, len=20
+
+g.mean_time_in_bed = (mean_los_slider * 60)
+g.sd_time_in_bed = (sd_time_in_bed_list[mean_int_in_bed_list.index(mean_los_slider)] * 60)
 g.number_of_nelbeds = num_nelbeds_slider
 g.ed_inter_visit = 1440/daily_ed_adm_slider
 g.sdec_inter_visit = 1440/daily_sdec_adm_slider if daily_sdec_adm_slider != 0 else 0
