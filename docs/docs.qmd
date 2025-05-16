@@ -162,7 +162,7 @@ combined_fig.show()
 
 ```{python}
 ### This cell creates a summary table
-compare_list=[list_of_summary_lists1[0], list_of_summary_lists1[1], list_of_summary_lists2[12]]
+compare_list=[list_of_summary_lists1[0], list_of_summary_lists1[1], list_of_summary_lists2[12+1]] # corresponding summary list is + 1 index
 summary_table1=distribution_functions.summary_lists_to_table(compare_list)
 summary_table1=summary_table1.rename(columns={'LoS Dist -1':'Real LoS'})
 summary_table1=summary_table1.rename(columns={'LoS Dist 0':'Modelled LoS (Matched Mean/Std)'})
@@ -329,7 +329,7 @@ combined_fig.show()
 # fig.update_layout(title = f'Real vs Modelled Dist (Increased LoS)')
 # fig.show()
 
-compare_list=[list_of_summary_lists4[12], list_of_summary_lists4[5], list_of_summary_lists4[19]]
+compare_list=[list_of_summary_lists4[12+1], list_of_summary_lists4[5+1], list_of_summary_lists4[19+1]]
 summary_table1=distribution_functions.summary_lists_to_table(compare_list)
 summary_table1.set_index('Metric', inplace=True)
 summary_table1.columns = ['Default Scenario', 'Decreased LoS', 'Increased LoS']

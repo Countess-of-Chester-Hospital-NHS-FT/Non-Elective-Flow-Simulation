@@ -180,7 +180,7 @@ def hist_compare_real_model(filepath, mean_list, std_list, random_seed):
         #fig.show()
         fig_list.append(fig)
 
-    return fig_list, list_of_summary_lists
+    return fig_list, list_of_summary_lists #note: list of summary lists will be longer than fig list because it has real distribtion at the start
 
 
 
@@ -269,8 +269,10 @@ def visualise_normal_hist_list(mean_list, std_list, samples, random_seed):
 ### Function testing ground
 
 # use this to generate sequence to hard code into app
-mode=16
-traces=20
-mean_list, std_list = make_lognormal_lists(mode, traces)
+# mode=16
+# traces=20
+# mean_list, std_list = make_lognormal_lists(mode, traces)
 
-fig_list, list_of_summary_lists=hist_compare_real_model("../data/los_fy2425.csv", mean_list, std_list, 5)
+# fig_list, list_of_summary_lists=hist_compare_real_model("../data/los_fy2425.csv", mean_list, std_list, 5)
+
+# summary_df=summary_lists_to_table(list_of_summary_lists)
