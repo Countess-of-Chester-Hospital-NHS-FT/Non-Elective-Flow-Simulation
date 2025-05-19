@@ -84,7 +84,7 @@ with st.sidebar:
     
     with st.expander("Advanced Parameters"):
         num_runs_slider = st.slider("Adjust number of runs the model does",
-                                     min_value=10, max_value=20, value=10)
+                                     min_value=10, max_value=20, value=15)
         
     st.markdown("---")
 
@@ -144,7 +144,7 @@ with tab1:
 
             metrics=['Total Admission Demand', 'Admissions via ED',
                          'Mean Q Time (Hrs)', '95th Percentile Q Time (Hrs)',
-                         '12hr DTAs (per day)', 'Reneged']
+                         '12hr DTAs (per day)', 'Reneged (per day)']
             trial_summary_df=trial_summary_df[trial_summary_df.index.isin(metrics)]
 
             st.dataframe(trial_summary_df)
