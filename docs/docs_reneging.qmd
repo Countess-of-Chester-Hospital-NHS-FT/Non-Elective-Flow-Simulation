@@ -1,6 +1,5 @@
 ---
 title: "Non-Elective Flow Model Documentation"
-subtitle: "Reneging"
 execute:
   echo: false
 format:
@@ -12,17 +11,8 @@ format:
 ```{python}
 #| label: library-imports
 import pandas as pd
-import numpy as np
-import plotly.express as px
-import sys
-import os
-root_dir = os.path.abspath(os.path.join(os.getcwd(), '..'))
-sys.path.append(root_dir)
-from app.model import g, Trial
-import plotly.graph_objects as go
 import distribution_functions
-from plotly.subplots import make_subplots
-
+from sim_tools.distributions import (Lognormal)
 ```
 
 # Reneging
@@ -42,4 +32,67 @@ than 16 hours before they renege as treatment will be much less efficient and th
 
 ```{python}
 #los trace vs reneging trace
+
+#default los list
+mode=16
+n=20
+mean_list_d, std_list_d=distribution_functions.make_lognormal_lists(mode, n)
+
+#reneging los list
+mode=64
+n=20
+mean_list_r, std_list_r=distribution_functions.make_lognormal_lists(mode, n)
+
+#make plot with both the traces
+mean_list=[mean_list_d[12], mean_list_r[12]]
+std_list=[std_list_d[12], std_list_r[12]]
+
+fig, df=distribution_functions.visualise_lognormal(mean_list, std_list)
+
+legend_labels=["Inpatient LoS", "Time to Renege"]
+
+for trace, new_name in zip(fig.data, legend_labels):
+    trace.name = new_name
+
+fig.update_layout(
+    title_text="Inpatient LoS vs Time to Renege Distributions",
+    legend_title_text="Legend",
+    template='plotly_white',
+    showlegend=True
+)
+
+fig.show()
+
+display(df)
+```
+
+In the model each patient is given an expected time to renege and an inpatient los
+when the patient is generated. These are drawn from the respective distributions
+, but are connected via the random seed so that patients who have long los (generally
+sicker, more complex patients) would also have a long time before they would renege.
+See below - if a patient would have a shorter los they would have a shorter reneging time
+and vice versa.
+
+```{python}
+#initialise distributions
+time_to_renege_dist = Lognormal(mean_list_r[12], std_list_r[12], random_seed = 5)
+inpatient_los_dist = Lognormal(mean_list_d[12], std_list_d[12], random_seed = 5)
+
+patient_list=[]
+inp_los_list=[]
+renege_list=[]
+
+#sample from distributions for consecutive patients
+for i in range(3):
+  patient_list.append(f"Patient {i}")
+  inp_los_list.append(inpatient_los_dist.sample())
+  renege_list.append(time_to_renege_dist.sample())
+
+sample_df= pd.DataFrame(
+        {'Patient':pd.Series(patient_list),
+         'Inpatient LoS Hrs':pd.Series(inp_los_list),
+         'Time to Renege Hrs':pd.Series(renege_list)}
+    )
+
+display(sample_df)
 ```
