@@ -26,47 +26,47 @@ st.title("Non-Elective Flow Virtual Hospital")
 st.header("(work in progress)")
 
 # set range of values for los slider
-mean_time_in_bed_list = [71.70702512540906,
- 77.67821709676522,
- 84.3216441668675,
- 91.7236138377383,
- 99.98285232546758,
- 109.21245279909989,
- 119.54215308465062,
- 131.12100225362667,
+mean_time_in_bed_list = [138.7382025354152,
  144.1204868652976,
- 158.7382012645096,
+ 149.76134831621232,
+ 155.67473175398086,
+ 161.8754074290085,
+ 168.3790235999657,
  175.20216273322046,
- 193.77589204127548,
- 214.76440375750872,
- 238.52127944356852,
- 265.4570316348337,
- 296.0490086340166,
- 330.85314122321984,
- 370.51789443142826,
- 415.8008629304791,
- 467.5885404997592]
+ 182.36240153482328,
+ 189.87837509120888,
+ 197.7698454156935,
+ 206.05777472038835,
+ 214.76440375750852,
+ 223.91333560032334,
+ 233.5296252623914,
+ 243.63987558436168,
+ 254.27233985074432,
+ 265.45703163483324,
+ 277.2258424086355,
+ 289.61266749646745,
+ 302.6535409960803]
 mean_int_in_bed_list=[round(x) for x in mean_time_in_bed_list]
-sd_time_in_bed_list = [93.99589861344424,
- 106.14284374298829,
- 120.092388493405,
- 136.14474828182972,
- 154.65489435740722,
- 176.0433543928601,
- 200.809293238283,
- 229.54638524039055,
+sd_time_in_bed_list = [248.9837009930806,
  262.9621106480747,
- 301.90125988635043,
+ 277.822418063578,
+ 293.6256905003274,
+ 310.43755753899,
+ 328.3285748616339,
  347.3746187373278,
- 400.59404470387994,
- 463.0154427703999,
- 536.3915236525158,
- 622.8367002063936,
- 724.9070745473875,
- 845.6992237470541,
- 988.9724496371688,
- 1159.3003748078424,
- 1362.2593153480746]
+ 367.6573139379976,
+ 389.26449806398347,
+ 412.2907255366589,
+ 436.83781482034146,
+ 463.0154427703993,
+ 490.9417903718149,
+ 520.7442445359864,
+ 552.5601610667529,
+ 586.5376943937254,
+ 622.8367002063923,
+ 661.6297177111919,
+ 703.1030388812503,
+ 747.4578727809351]
 
 with st.sidebar:
     daily_ed_adm_slider = st.slider("Adjust daily demand for admission via ED",
@@ -76,15 +76,15 @@ with st.sidebar:
     daily_other_adm_slider = st.slider("Adjust daily demand for admission via other routes",
                                     min_value=0, max_value=10, value=3)
     num_nelbeds_slider = st.slider("Adjust number of non-elective beds",
-                                min_value=380, max_value=500, value=446)
+                                min_value=380, max_value=550, value=456)
     mean_los_slider = st.select_slider("Adjust mean inpatient LOS (hrs)",
                                 options=mean_int_in_bed_list, 
-                                value=mean_int_in_bed_list[12],
+                                value=mean_int_in_bed_list[10],
                                 help="Values from a pre-calculated set of distributions - see los documentation")
     
     with st.expander("Advanced Parameters"):
         num_runs_slider = st.slider("Adjust number of runs the model does",
-                                     min_value=10, max_value=20, value=10)
+                                     min_value=10, max_value=20, value=15)
         
     st.markdown("---")
 
@@ -98,7 +98,7 @@ with st.sidebar:
                 """)
 # use function make_lognormal_lists from distribution_functions.py, mode=16, len=20
 
-g.mean_time_in_bed = (mean_los_slider * 60)
+g.mean_time_in_bed = (mean_time_in_bed_list[mean_int_in_bed_list.index(mean_los_slider)] * 60)
 g.sd_time_in_bed = (sd_time_in_bed_list[mean_int_in_bed_list.index(mean_los_slider)] * 60)
 g.number_of_nelbeds = num_nelbeds_slider
 g.ed_inter_visit = 1440/daily_ed_adm_slider
@@ -144,7 +144,7 @@ with tab1:
 
             metrics=['Total Admission Demand', 'Admissions via ED',
                          'Mean Q Time (Hrs)', '95th Percentile Q Time (Hrs)',
-                         '12hr DTAs (per day)', 'Reneged']
+                         '12hr DTAs (per day)', 'Reneged (per day)']
             trial_summary_df=trial_summary_df[trial_summary_df.index.isin(metrics)]
 
             st.dataframe(trial_summary_df)

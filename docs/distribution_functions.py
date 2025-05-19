@@ -9,7 +9,7 @@ from sim_tools.distributions import (Exponential, Lognormal, Uniform, Normal)
 
 # Make list of theoretical distributions, constant mean but changing tail thickness
 def make_lognormal_lists(mode_target, len):
-    sigma_list = np.linspace(1.0, 1.5, len)
+    sigma_list = np.linspace(1.2, 1.4, len)
 
     meanlos_list = []
     std_list = []
@@ -276,3 +276,8 @@ def visualise_normal_hist_list(mean_list, std_list, samples, random_seed):
 # fig_list, list_of_summary_lists=hist_compare_real_model("../data/los_fy2425.csv", mean_list, std_list, 5)
 
 # summary_df=summary_lists_to_table(list_of_summary_lists)
+
+# for i in range(len(fig_list)):
+#     fig_list[i].show()
+
+# display(summary_df)

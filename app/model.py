@@ -285,6 +285,11 @@ class Trial:
         #df["total_los"] = df["depart"] - df["arrival"]
         df["q_time"] = df["admission_begins"] - df["admission_wait_begins"]
         df["q_time_hrs"] = df["q_time"] / 60.0
+        df["q_time2_hrs"] = np.where(
+                                df["admission_begins"].notnull(),
+                                df["admission_begins"] - df["admission_wait_begins"],
+                                df["renege"] - df["admission_wait_begins"]
+                                ) / 60.0
         df["treatment_time"] = df["admission_complete"] - df["admission_begins"]
         if "renege" not in df.columns:
             df["renege"] = np.nan
@@ -315,7 +320,7 @@ class Trial:
             ed_admissions=("patient", lambda x: (
                         ((run_summary.loc[x.index, "admission_begins"] > g.warm_up_period
                         ) & (run_summary.loc[x.index, "pathway"] == "ED")).sum())),
-            reneged=("renege", lambda x: (x > g.warm_up_period).sum()),
+            reneged=("renege", lambda x: (x > g.warm_up_period).sum() / (g.sim_duration/1440)),
             ed_mean_qtime=("q_time", lambda x: (
                         x[
                             (run_summary.loc[x.index, "admission_begins"] > g.warm_up_period) &
@@ -361,35 +366,32 @@ class Trial:
                             x.notna()
                         ].gt(12 * 60).sum() / (g.sim_duration/1440)
             )),
-                        #.gt(12 * 60).sum())) / (g.sim_duration/1440),
-            under_4hr=("q_time", lambda x: (
-                        x[
-                            (run_summary.loc[x.index, "admission_begins"] > g.warm_up_period) &
+            los_12hr=("q_time2_hrs", lambda x: (
+                        x[  (
+                            (run_summary.loc[x.index, "admission_begins"] > g.warm_up_period) |
+                            (run_summary.loc[x.index, "renege"] > g.warm_up_period)
+                            ) &
                             (run_summary.loc[x.index, "pathway"] == "ED") &
                             x.notna()
-                        ].lt(4 * 60).sum() / (g.sim_duration/1440)
+                        ].gt(12).sum() / (g.sim_duration/1440)
             )),
-                        #) & (run_summary.loc[x.index, "pathway"] == "ED")).lt(4 * 60).sum())),
             sdec_admissions=("patient", lambda x: (
                         ((run_summary.loc[x.index, "admission_begins"] > g.warm_up_period
                         ) & (run_summary.loc[x.index, "pathway"] == "SDEC")).sum()))
         )
-        run_summary["admitted_perf_4hr"]=(run_summary["under_4hr"] / run_summary["ed_admissions"])*100 #
-        run_summary["total_perf_4hr"]=(run_summary["under_4hr"] / run_summary["ed_demand"])*100
-        run_summary=run_summary.drop(columns=["ed_demand", "under_4hr", "ed_sd_qtime"])
+        run_summary=run_summary.drop(columns=["ed_demand", "ed_sd_qtime"])
         run_summary=run_summary.rename(columns={
             'total_demand':'Total Admission Demand',
             'discharges':'Total Discharges',
             'ed_admissions': 'Admissions via ED',
-            'reneged': 'Reneged',
+            'reneged': 'Reneged (per day)',
             'ed_mean_qtime':'Mean Q Time (Hrs)',
             'ed_min_qtime':'Min Q Time (Hrs)',
             'ed_max_qtime':'Max Q Time (Hrs)',
             'ed_95':'95th Percentile Q Time (Hrs)',
             'dtas_12hr':'12hr DTAs (per day)',
-            'sdec_admissions':'SDEC Admissions',
-            'admitted_perf_4hr':'Admitted 4hr DTA Performance (%)',
-            'total_perf_4hr':'Overall 4hr DTA Performance (%)'
+            'los_12hr':'12hr LoS Breaches (per day)',
+            'sdec_admissions':'SDEC Admissions'
         })
         self.run_summary_df = run_summary
 
@@ -413,11 +415,11 @@ class Trial:
     
 
 #For testing
-#my_trial = Trial()
-#print(f"Running {g.number_of_runs} simulations......")
-#all_event_logs, patient_df, patient_df_nowarmup, run_summary_df, trial_summary_df =  my_trial.run_trial()
-# display(my_trial.all_event_logs.head(1000))
-# display(my_trial.patient_df.head(1000))
-# display(my_trial.patient_df_nowarmup.head(1000))
+# my_trial = Trial()
+# print(f"Running {g.number_of_runs} simulations......")
+# all_event_logs, patient_df, run_summary_df, trial_summary_df =  my_trial.run_trial()
+# #display(my_trial.all_event_logs.head(1000))
+# display(my_trial.patient_df.tail(1000))
+# #display(my_trial.patient_df_nowarmup.head(1000))
 # display(my_trial.run_summary_df)
 # display(my_trial.trial_summary_df)
