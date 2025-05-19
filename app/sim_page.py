@@ -76,7 +76,7 @@ with st.sidebar:
     daily_other_adm_slider = st.slider("Adjust daily demand for admission via other routes",
                                     min_value=0, max_value=10, value=3)
     num_nelbeds_slider = st.slider("Adjust number of non-elective beds",
-                                min_value=380, max_value=500, value=446)
+                                min_value=380, max_value=550, value=456)
     mean_los_slider = st.select_slider("Adjust mean inpatient LOS (hrs)",
                                 options=mean_int_in_bed_list, 
                                 value=mean_int_in_bed_list[10],
