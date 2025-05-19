@@ -1,0 +1,98 @@
+---
+title: "Non-Elective Flow Model Documentation"
+execute:
+  echo: false
+format:
+    html:
+        toc: true
+        embed-resources: true
+---
+
+```{python}
+#| label: library-imports
+import pandas as pd
+import distribution_functions
+from sim_tools.distributions import (Lognormal)
+```
+
+# Reneging
+In the model I have made some assumptions about how reneging (being discharged
+from the queue) works. Patients who have long waits for admission are under the
+care of the acute medical team and often receiving some of the care that they
+would otherwise have received on AMU. The longer they remain in ED, the more
+likely they are to have received the treatment they need and be discharged from
+the queue. It also makes logical sense that patients wouldn't wait in the queue
+forever if the waits are very long and never be discharged. They would receive
+treatment, even if that treatment was negatively impacted by waiting in the
+queue. I have assumed the length of time before a patient reneges is related to their expected los i.e sicker patients are likely to spend more time in hospital and if they are
+unable to be admitted will spend longer in the ED queue before they are discharged.
+I have also assumed that if, under perfect flow conditions, someone would have an
+overnight stay (~16hrs), if they are waiting on the corridor it would be longer
+than 16 hours before they renege as treatment will be much less efficient and the environment much worse than on AMU. I am assuming their los would be approx 48hrs longer.
+
+```{python}
+#los trace vs reneging trace
+
+#default los list
+mode=16
+n=20
+mean_list_d, std_list_d=distribution_functions.make_lognormal_lists(mode, n)
+
+#reneging los list
+mode=64
+n=20
+mean_list_r, std_list_r=distribution_functions.make_lognormal_lists(mode, n)
+
+#make plot with both the traces
+mean_list=[mean_list_d[12], mean_list_r[12]]
+std_list=[std_list_d[12], std_list_r[12]]
+
+fig, df=distribution_functions.visualise_lognormal(mean_list, std_list)
+
+legend_labels=["Inpatient LoS", "Time to Renege"]
+
+for trace, new_name in zip(fig.data, legend_labels):
+    trace.name = new_name
+
+fig.update_layout(
+    title_text="Inpatient LoS vs Time to Renege Distributions",
+    legend_title_text="Legend",
+    template='plotly_white',
+    showlegend=True
+)
+
+fig.show()
+
+display(df)
+```
+
+In the model each patient is given an expected time to renege and an inpatient los
+when the patient is generated. These are drawn from the respective distributions
+, but are connected via the random seed so that patients who have long los (generally
+sicker, more complex patients) would also have a long time before they would renege.
+See below - if a patient would have a shorter los they would have a shorter reneging time
+and vice versa.
+
+```{python}
+#initialise distributions
+time_to_renege_dist = Lognormal(mean_list_r[12], std_list_r[12], random_seed = 5)
+inpatient_los_dist = Lognormal(mean_list_d[12], std_list_d[12], random_seed = 5)
+
+patient_list=[]
+inp_los_list=[]
+renege_list=[]
+
+#sample from distributions for consecutive patients
+for i in range(3):
+  patient_list.append(f"Patient {i}")
+  inp_los_list.append(inpatient_los_dist.sample())
+  renege_list.append(time_to_renege_dist.sample())
+
+sample_df= pd.DataFrame(
+        {'Patient':pd.Series(patient_list),
+         'Inpatient LoS Hrs':pd.Series(inp_los_list),
+         'Time to Renege Hrs':pd.Series(renege_list)}
+    )
+
+display(sample_df)
+```
