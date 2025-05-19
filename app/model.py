@@ -315,7 +315,7 @@ class Trial:
             ed_admissions=("patient", lambda x: (
                         ((run_summary.loc[x.index, "admission_begins"] > g.warm_up_period
                         ) & (run_summary.loc[x.index, "pathway"] == "ED")).sum())),
-            reneged=("renege", lambda x: (x > g.warm_up_period).sum()),
+            reneged=("renege", lambda x: (x > g.warm_up_period).sum() / (g.sim_duration/1440)),
             ed_mean_qtime=("q_time", lambda x: (
                         x[
                             (run_summary.loc[x.index, "admission_begins"] > g.warm_up_period) &
@@ -381,7 +381,7 @@ class Trial:
             'total_demand':'Total Admission Demand',
             'discharges':'Total Discharges',
             'ed_admissions': 'Admissions via ED',
-            'reneged': 'Reneged',
+            'reneged': 'Reneged (per day)',
             'ed_mean_qtime':'Mean Q Time (Hrs)',
             'ed_min_qtime':'Min Q Time (Hrs)',
             'ed_max_qtime':'Max Q Time (Hrs)',
