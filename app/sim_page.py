@@ -67,6 +67,7 @@ sd_time_in_bed_list = [248.9837009930806,
  661.6297177111919,
  703.1030388812503,
  747.4578727809351]
+on_off = ["on", "off"]
 
 with st.sidebar:
     daily_ed_adm_slider = st.slider("Adjust daily demand for admission via ED",
