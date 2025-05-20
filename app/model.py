@@ -18,8 +18,8 @@ class g: # global
     warm_up_period = (300 * 24 * 60) #convert days into minutes
     number_of_runs = 10
     reneging = 1 #allow reneging behaviour to be switched on or off
-    prioritisation = 1
-    priority_threshold = (40 * 60) #44 hours
+    escalation = 1
+    escalation_threshold = (40 * 60) #44 hours
 
 class Patient:
     def __init__(self, p_id):
@@ -108,7 +108,7 @@ class Model:
         )
         patient.first_request_time = self.env.now
         if g.reneging == 0: #if there is no reneging
-            if g.prioritisation == 0: #if there is no prioritisation
+            if g.escalation == 0: #if there is no escalation
                 bed_resource = yield self.nelbed.get(priority=patient.priority)
 
                 self.event_log.append(
@@ -143,12 +143,12 @@ class Model:
                 'event' : 'depart',
                 'time' : self.env.now}
                 )
-            else: #if there is no reneging but there is prioritisation
+            else: #if there is no reneging but there is escalation
                 bed_resource = self.nelbed.get(priority=patient.priority)
 
                 # Wait until one of 2 things happens....
                 result_of_queue = (yield bed_resource | # they get a bed
-                                    self.env.timeout(g.priority_threshold)) # they hit the priority threshold
+                                    self.env.timeout(g.escalation_threshold)) # they hit the priority threshold
                 if bed_resource in result_of_queue: # if they get a bed before being reprioritised
                     self.event_log.append(
                     {'patient' : patient.id,
@@ -215,7 +215,7 @@ class Model:
 
 
         else: # if reneging is turned on
-            if g.prioritisation == 0: # and prioritisation is not turned on
+            if g.escalation == 0: # and escalation is not turned on
                 bed_resource = self.nelbed.get(priority=patient.priority)
 
                 # Wait until one of 2 things happens....
@@ -267,13 +267,13 @@ class Model:
                     'event' : 'depart',
                     'time' : self.env.now}
                     )
-            else: # if prioritisation is turned on and reneging is turned on
+            else: # if escalation is turned on and reneging is turned on
                 bed_resource = self.nelbed.get(priority=patient.priority)
 
                 # Wait until one of 3 things happens....
                 result_of_queue = (yield bed_resource | # they get a bed
                                     self.env.timeout(patient.inpatient_exp_los) |
-                                    self.env.timeout(g.priority_threshold)) # they renege
+                                    self.env.timeout(g.escalation_threshold)) # they renege
 
                 if bed_resource in result_of_queue: # they get a bed initially
                     self.event_log.append(
@@ -302,7 +302,7 @@ class Model:
                     self.nelbed.put(result_of_queue[bed_resource])
                 
                 # # If patient reneges
-                elif patient.inpatient_exp_los < g.priority_threshold : # they renege
+                elif patient.inpatient_exp_los < g.escalation_threshold : # they renege
                     bed_resource.cancel() # cancel initial request
                     self.event_log.append(
                         {'patient' : patient.id,
@@ -313,13 +313,6 @@ class Model:
                         }
                         )
                     
-                    # self.event_log.append(
-                    #     {'patient' : patient.id,
-                    #     'pathway' : patient.department,
-                    #     'event_type' : 'arrival_departure',
-                    #     'event' : 'depart',
-                    #     'time' : self.env.now}
-                    #     )
                 else: # they are reprioritised and wait for a bed
                     bed_resource.cancel() # cancel initial request
                     patient.priority=0 # reprioritise patient
@@ -604,12 +597,12 @@ class Trial:
 # my_trial = Trial()
 # print(f"Running {g.number_of_runs} simulations......")
 # all_event_logs, patient_df, run_summary_df, trial_summary_df =  my_trial.run_trial()
-# # #display(my_trial.all_event_logs.head(1000))
+# # # #display(my_trial.all_event_logs.head(1000))
 # display(my_trial.patient_df.tail(1000))
-# # #display(my_trial.patient_df_nowarmup.head(1000))
-# # display(my_trial.run_summary_df)
-# # display(my_trial.trial_summary_df)
+# # # #display(my_trial.patient_df_nowarmup.head(1000))
+# # # display(my_trial.run_summary_df)
+# # # display(my_trial.trial_summary_df)
 
-# # test for no admission complete and no renege without depart timestamps
-# patient_df[(~patient_df['admission_complete'].isna()) & (patient_df['depart'].isna())]
-# patient_df[(~patient_df['admission_complete'].isna()) & (patient_df['depart'].isna())]
+# # # test for no admission complete and no renege without depart timestamps
+# display(patient_df[(~patient_df['admission_complete'].isna()) & (patient_df['depart'].isna())])
+# display(patient_df[(~patient_df['admission_complete'].isna()) & (patient_df['depart'].isna())])
