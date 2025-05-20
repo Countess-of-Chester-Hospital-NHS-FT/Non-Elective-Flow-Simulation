@@ -97,7 +97,9 @@ with st.sidebar:
                                                 max_value=100,
                                                 value=40,
                                                 help="Number of hours wait after"
-                                                " which patients priority increases")
+                                                " which patients priority increases"
+                                                " (will only have an effect if "
+                                                "escalation is turned on)")
         renege_slider = st.select_slider("Turn reneging on/off",
                                              options=off_on,
                                              value=off_on[1],
