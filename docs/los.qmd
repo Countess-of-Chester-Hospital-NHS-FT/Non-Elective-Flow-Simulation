@@ -462,7 +462,7 @@ fig1=fig_list1[0]
 mode=16
 mean_list, std_list = distribution_functions.make_lognormal_lists(mode, 20)
 fig_list2, list_of_summary_lists2=distribution_functions.hist_compare_real_model("../data/los_fy2425.csv", mean_list, std_list, 5)
-fig2=fig_list2[12]
+fig2=fig_list2[10]
 
 # This cell makes a combined plot of 2 modelling attempts
 combined_fig = make_subplots(

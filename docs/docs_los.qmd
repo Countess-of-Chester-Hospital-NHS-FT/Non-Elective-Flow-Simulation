@@ -110,7 +110,7 @@ fig1=fig_list1[0]
 mode=16
 mean_list, std_list = distribution_functions.make_lognormal_lists(mode, 20)
 fig_list2, list_of_summary_lists2=distribution_functions.hist_compare_real_model("../data/los_fy2425.csv", mean_list, std_list, 5)
-fig2=fig_list2[12]
+fig2=fig_list2[10]
 ```
 
 ```{python}
@@ -162,7 +162,7 @@ combined_fig.show()
 
 ```{python}
 ### This cell creates a summary table
-compare_list=[list_of_summary_lists1[0], list_of_summary_lists1[1], list_of_summary_lists2[12+1]] # corresponding summary list is + 1 index
+compare_list=[list_of_summary_lists1[0], list_of_summary_lists1[1], list_of_summary_lists2[10+1]] # corresponding summary list is + 1 index
 summary_table1=distribution_functions.summary_lists_to_table(compare_list)
 summary_table1=summary_table1.rename(columns={'LoS Dist -1':'Real LoS'})
 summary_table1=summary_table1.rename(columns={'LoS Dist 0':'Modelled LoS (Matched Mean/Std)'})
@@ -279,11 +279,11 @@ def copy_trace_with_color(trace, row, col):
     combined_fig.add_trace(trace_copy, row=row, col=col)
 
 # Add fig1 traces to subplot 1
-for trace in fig_list4[12].data:
+for trace in fig_list4[10].data:
     copy_trace_with_color(trace, row=1, col=1)
 
 # Add fig2 traces to subplot 2
-for trace in fig_list4[5].data:
+for trace in fig_list4[4].data:
     copy_trace_with_color(trace, row=2, col=1)
 
 # Add fig2 traces to subplot 2
@@ -329,7 +329,7 @@ combined_fig.show()
 # fig.update_layout(title = f'Real vs Modelled Dist (Increased LoS)')
 # fig.show()
 
-compare_list=[list_of_summary_lists4[12+1], list_of_summary_lists4[5+1], list_of_summary_lists4[19+1]]
+compare_list=[list_of_summary_lists4[10+1], list_of_summary_lists4[4+1], list_of_summary_lists4[19+1]]
 summary_table1=distribution_functions.summary_lists_to_table(compare_list)
 summary_table1.set_index('Metric', inplace=True)
 summary_table1.columns = ['Default Scenario', 'Decreased LoS', 'Increased LoS']
@@ -340,7 +340,7 @@ display(summary_table1)
 
 
 Here are 20 LoS probability distributions I've generated keeping the mode constant
-and altering the tail thickness. I've chosen Distribution 12 as the closest to the
+and altering the tail thickness. I've chosen Distribution 10 as the closest to the
 real distribution (as above) which will used as the default scenario. Increasing
 or decreasing LoS in the model will move through these distributions.
 
