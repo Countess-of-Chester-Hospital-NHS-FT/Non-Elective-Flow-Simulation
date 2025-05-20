@@ -6,6 +6,7 @@ from sim_tools.distributions import (Exponential, Lognormal, Uniform)
 from scipy.stats import sem, t
 import scipy.stats as stats
 from vidigi.utils import VidigiPriorityStore, populate_store
+import plotly.express as px
 
 class g: # global
     ed_inter_visit = 37.7 
@@ -20,6 +21,8 @@ class g: # global
     reneging = 1 #allow reneging behaviour to be switched on or off
     escalation = 1
     escalation_threshold = (40 * 60) #44 hours
+    prioritisation = 0
+    prop_high_priority = 0.2
 
 class Patient:
     def __init__(self, p_id):
@@ -43,6 +46,7 @@ class Model:
         self.other_inter_visit_dist = Exponential(mean = g.other_inter_visit, random_seed = (self.run_number+1)*4)
         self.exp_time_in_bed_dist = Lognormal((859.0576150300343 * 60), (1852.0617710815982 * 60), random_seed = (self.run_number+1)*5) # governs reneging behaviour - fixed (values 2023-march 2025)
         self.mean_time_in_bed_dist = Lognormal(g.mean_time_in_bed, g.sd_time_in_bed, random_seed = (self.run_number+1)*5) # alterable via the interface
+        self.priority_dist = Uniform(0, 1, (self.run_number+1)*6)
         self.init_resources()
 
     def init_resources(self):
@@ -56,7 +60,8 @@ class Model:
             self.patient_counter += 1
             p = Patient(self.patient_counter)
             p.department = "ED"
-            p.priority = 1
+            self.priority_sample = self.priority_dist.sample()
+            p.priority = 0 if (g.prioritisation == 1 and self.priority_sample < g.prop_high_priority) else 1
             p.inpatient_los = self.mean_time_in_bed_dist.sample()
             p.inpatient_exp_los = self.exp_time_in_bed_dist.sample()
             self.env.process(self.attend_ed(p))
@@ -597,12 +602,34 @@ class Trial:
 # my_trial = Trial()
 # print(f"Running {g.number_of_runs} simulations......")
 # all_event_logs, patient_df, run_summary_df, trial_summary_df =  my_trial.run_trial()
-# # # #display(my_trial.all_event_logs.head(1000))
+# # # # # #display(my_trial.all_event_logs.head(1000))
 # display(my_trial.patient_df.tail(1000))
-# # # #display(my_trial.patient_df_nowarmup.head(1000))
-# # # display(my_trial.run_summary_df)
-# # # display(my_trial.trial_summary_df)
+# # # # # #display(my_trial.patient_df_nowarmup.head(1000))
+# # # # # display(my_trial.run_summary_df)
+# # # # # display(my_trial.trial_summary_df)
 
-# # # test for no admission complete and no renege without depart timestamps
-# display(patient_df[(~patient_df['admission_complete'].isna()) & (patient_df['depart'].isna())])
-# display(patient_df[(~patient_df['admission_complete'].isna()) & (patient_df['depart'].isna())])
+# # # # # test for no admission complete and no renege without depart timestamps
+# # # display(patient_df[(~patient_df['admission_complete'].isna()) & (patient_df['depart'].isna())])
+# # # display(patient_df[(~patient_df['admission_complete'].isna()) & (patient_df['depart'].isna())])
+        
+# # #####Number of beds occupied
+
+# minutes = pd.Series(range(g.sim_duration - 1440, g.sim_duration))
+
+# run0_df = patient_df[patient_df['run'] == 0]
+# beds = ((run0_df["admission_begins"].values[:, None] < minutes.values) &
+#         ((run0_df["admission_complete"].values[:, None] > minutes.values) |
+#          run0_df["admission_complete"].isna().values[:, None])).sum(axis=0)
+
+# beds_df = pd.DataFrame({"minutes": minutes, "beds": beds})
+
+# fig = px.line(beds_df, x = "minutes", y = "beds")
+
+# fig.add_hline(y=434, line_dash="dash", line_color="lightblue",
+#               opacity=0.5, 
+#               annotation_text="max. beds", 
+#               annotation_position="top left")
+
+# fig.update_layout(template="plotly_dark")
+
+# fig.show()
