@@ -18,6 +18,8 @@ class g: # global
     warm_up_period = (300 * 24 * 60) #convert days into minutes
     number_of_runs = 10
     reneging = 1 #allow reneging behaviour to be switched on or off
+    prioritisation = 1
+    priority_threshold = (40 * 60) #44 hours
 
 class Patient:
     def __init__(self, p_id):
@@ -25,6 +27,8 @@ class Patient:
         self.department = ""
         self.priority = 0
         self.inpatient_los = 0
+        self.first_request_time = 0
+        self.second_request_time = 0
 
 class Model:
     def __init__(self, run_number):
@@ -65,7 +69,7 @@ class Model:
             self.patient_counter += 1
             p = Patient(self.patient_counter)
             p.department = "SDEC"
-            p.priority = 0.8 # set all sdec patients as high priority
+            p.priority = 0 # set all sdec patients as high priority
             p.inpatient_los = self.mean_time_in_bed_dist.sample()
             p.inpatient_exp_los = self.exp_time_in_bed_dist.sample()
             self.env.process(self.attend_other(p))
@@ -78,7 +82,7 @@ class Model:
             self.patient_counter += 1
             p = Patient(self.patient_counter)
             p.department = "Other"
-            p.priority = 0.8 # set all other patients as high priority
+            p.priority = 0 # set all other patients as high priority
             p.inpatient_los = self.mean_time_in_bed_dist.sample()
             p.inpatient_exp_los = self.exp_time_in_bed_dist.sample()
             self.env.process(self.attend_other(p))
@@ -102,60 +106,21 @@ class Model:
              'event' : 'admission_wait_begins',
              'time' : self.env.now}
         )
+        patient.first_request_time = self.env.now
         if g.reneging == 0: #if there is no reneging
-            bed_resource = yield self.nelbed.get(priority=patient.priority)
+            if g.prioritisation == 0: #if there is no prioritisation
+                bed_resource = yield self.nelbed.get(priority=patient.priority)
 
-            self.event_log.append(
-                {'patient' : patient.id,
-                'pathway' : patient.department,
-                'event_type' : 'resource_use',
-                'event' : 'admission_begins',
-                'time' : self.env.now,
-                'resource_id' : bed_resource.id_attribute
-                }
-                )
-        
-            sampled_bed_time = patient.inpatient_los
-            yield self.env.timeout(sampled_bed_time)
-
-            self.event_log.append(
-            {'patient' : patient.id,
-            'pathway' : patient.department,
-            'event_type' : 'resource_use_end',
-            'event' : 'admission_complete',
-            'time' : self.env.now,
-            'resource_id' : bed_resource.id_attribute
-            }
-            )
-
-            self.nelbed.put(bed_resource)
-
-            self.event_log.append(
-            {'patient' : patient.id,
-            'pathway' : patient.department,
-            'event_type' : 'arrival_departure',
-            'event' : 'depart',
-            'time' : self.env.now}
-            )
-
-        else: # if reneging is turned on
-            bed_resource = self.nelbed.get(priority=patient.priority)
-
-            # Wait until one of 3 things happens....
-            result_of_queue = (yield bed_resource | # they get a bed
-                                self.env.timeout(patient.inpatient_exp_los)) # they renege
-
-            if bed_resource in result_of_queue:
                 self.event_log.append(
-                {'patient' : patient.id,
-                'pathway' : patient.department,
-                'event_type' : 'resource_use',
-                'event' : 'admission_begins',
-                'time' : self.env.now,
-                'resource_id' : result_of_queue[bed_resource].id_attribute
-                }
-                )
-                        
+                    {'patient' : patient.id,
+                    'pathway' : patient.department,
+                    'event_type' : 'resource_use',
+                    'event' : 'admission_begins',
+                    'time' : self.env.now,
+                    'resource_id' : bed_resource.id_attribute
+                    }
+                    )
+            
                 sampled_bed_time = patient.inpatient_los
                 yield self.env.timeout(sampled_bed_time)
 
@@ -165,31 +130,252 @@ class Model:
                 'event_type' : 'resource_use_end',
                 'event' : 'admission_complete',
                 'time' : self.env.now,
-                'resource_id' : result_of_queue[bed_resource].id_attribute
+                'resource_id' : bed_resource.id_attribute
                 }
                 )
 
-                self.nelbed.put(result_of_queue[bed_resource])
-            
-        # # If patient reneges
-            else:
-                bed_resource.cancel() # SR - Think we need to ensure original request is cancelled at this point
+                self.nelbed.put(bed_resource)
+
                 self.event_log.append(
-                    {'patient' : patient.id,
-                    'pathway' : patient.department,
-                    'event_type' : 'arrival_departure',
-                    'event' : 'renege',
-                    'time' : self.env.now,
-                    }
-                    )
-                
-            self.event_log.append(
                 {'patient' : patient.id,
                 'pathway' : patient.department,
                 'event_type' : 'arrival_departure',
                 'event' : 'depart',
                 'time' : self.env.now}
                 )
+            else: #if there is no reneging but there is prioritisation
+                bed_resource = self.nelbed.get(priority=patient.priority)
+
+                # Wait until one of 2 things happens....
+                result_of_queue = (yield bed_resource | # they get a bed
+                                    self.env.timeout(g.priority_threshold)) # they hit the priority threshold
+                if bed_resource in result_of_queue: # if they get a bed before being reprioritised
+                    self.event_log.append(
+                    {'patient' : patient.id,
+                    'pathway' : patient.department,
+                    'event_type' : 'resource_use',
+                    'event' : 'admission_begins',
+                    'time' : self.env.now,
+                    'resource_id' : result_of_queue[bed_resource].id_attribute
+                    }
+                    )
+                            
+                    sampled_bed_time = patient.inpatient_los
+                    yield self.env.timeout(sampled_bed_time)
+
+                    self.event_log.append(
+                    {'patient' : patient.id,
+                    'pathway' : patient.department,
+                    'event_type' : 'resource_use_end',
+                    'event' : 'admission_complete',
+                    'time' : self.env.now,
+                    'resource_id' : result_of_queue[bed_resource].id_attribute
+                    }
+                    )
+
+                    self.nelbed.put(result_of_queue[bed_resource])
+                else: # if they don't get a bed they are reprioritised
+                    bed_resource.cancel() # cancel initial request
+                    patient.priority=0 # reprioritise patient
+                    bed_resource = yield self.nelbed.get(priority=patient.priority) # make new request and follow normal pathway
+
+                    self.event_log.append(
+                        {'patient' : patient.id,
+                        'pathway' : patient.department,
+                        'event_type' : 'resource_use',
+                        'event' : 'admission_begins',
+                        'time' : self.env.now,
+                        'resource_id' : bed_resource.id_attribute
+                        }
+                        )
+                
+                    sampled_bed_time = patient.inpatient_los
+                    yield self.env.timeout(sampled_bed_time)
+
+                    self.event_log.append(
+                    {'patient' : patient.id,
+                    'pathway' : patient.department,
+                    'event_type' : 'resource_use_end',
+                    'event' : 'admission_complete',
+                    'time' : self.env.now,
+                    'resource_id' : bed_resource.id_attribute
+                    }
+                    )
+
+                    self.nelbed.put(bed_resource)
+
+                self.event_log.append(
+                {'patient' : patient.id,
+                'pathway' : patient.department,
+                'event_type' : 'arrival_departure',
+                'event' : 'depart',
+                'time' : self.env.now}
+                )
+
+
+
+        else: # if reneging is turned on
+            if g.prioritisation == 0: # and prioritisation is not turned on
+                bed_resource = self.nelbed.get(priority=patient.priority)
+
+                # Wait until one of 2 things happens....
+                result_of_queue = (yield bed_resource | # they get a bed
+                                    self.env.timeout(patient.inpatient_exp_los)) # they renege
+
+                if bed_resource in result_of_queue:
+                    self.event_log.append(
+                    {'patient' : patient.id,
+                    'pathway' : patient.department,
+                    'event_type' : 'resource_use',
+                    'event' : 'admission_begins',
+                    'time' : self.env.now,
+                    'resource_id' : result_of_queue[bed_resource].id_attribute
+                    }
+                    )
+                            
+                    sampled_bed_time = patient.inpatient_los
+                    yield self.env.timeout(sampled_bed_time)
+
+                    self.event_log.append(
+                    {'patient' : patient.id,
+                    'pathway' : patient.department,
+                    'event_type' : 'resource_use_end',
+                    'event' : 'admission_complete',
+                    'time' : self.env.now,
+                    'resource_id' : result_of_queue[bed_resource].id_attribute
+                    }
+                    )
+
+                    self.nelbed.put(result_of_queue[bed_resource])
+                
+                # # If patient reneges
+                else:
+                    bed_resource.cancel() # SR - Think we need to ensure original request is cancelled at this point
+                    self.event_log.append(
+                        {'patient' : patient.id,
+                        'pathway' : patient.department,
+                        'event_type' : 'arrival_departure',
+                        'event' : 'renege',
+                        'time' : self.env.now,
+                        }
+                        )
+                    
+                self.event_log.append(
+                    {'patient' : patient.id,
+                    'pathway' : patient.department,
+                    'event_type' : 'arrival_departure',
+                    'event' : 'depart',
+                    'time' : self.env.now}
+                    )
+            else: # if prioritisation is turned on and reneging is turned on
+                bed_resource = self.nelbed.get(priority=patient.priority)
+
+                # Wait until one of 3 things happens....
+                result_of_queue = (yield bed_resource | # they get a bed
+                                    self.env.timeout(patient.inpatient_exp_los) |
+                                    self.env.timeout(g.priority_threshold)) # they renege
+
+                if bed_resource in result_of_queue: # they get a bed initially
+                    self.event_log.append(
+                    {'patient' : patient.id,
+                    'pathway' : patient.department,
+                    'event_type' : 'resource_use',
+                    'event' : 'admission_begins',
+                    'time' : self.env.now,
+                    'resource_id' : result_of_queue[bed_resource].id_attribute
+                    }
+                    )
+                            
+                    sampled_bed_time = patient.inpatient_los
+                    yield self.env.timeout(sampled_bed_time)
+
+                    self.event_log.append(
+                    {'patient' : patient.id,
+                    'pathway' : patient.department,
+                    'event_type' : 'resource_use_end',
+                    'event' : 'admission_complete',
+                    'time' : self.env.now,
+                    'resource_id' : result_of_queue[bed_resource].id_attribute
+                    }
+                    )
+
+                    self.nelbed.put(result_of_queue[bed_resource])
+                
+                # # If patient reneges
+                elif patient.inpatient_exp_los < g.priority_threshold : # they renege
+                    bed_resource.cancel() # cancel initial request
+                    self.event_log.append(
+                        {'patient' : patient.id,
+                        'pathway' : patient.department,
+                        'event_type' : 'arrival_departure',
+                        'event' : 'renege',
+                        'time' : self.env.now,
+                        }
+                        )
+                    
+                    # self.event_log.append(
+                    #     {'patient' : patient.id,
+                    #     'pathway' : patient.department,
+                    #     'event_type' : 'arrival_departure',
+                    #     'event' : 'depart',
+                    #     'time' : self.env.now}
+                    #     )
+                else: # they are reprioritised and wait for a bed
+                    bed_resource.cancel() # cancel initial request
+                    patient.priority=0 # reprioritise patient
+                    patient.second_request_time = self.env.now
+                    bed_resource = self.nelbed.get(priority=patient.priority)
+
+                # Wait until one of 2 things happens....
+                    result_of_queue = (yield bed_resource | # they get a bed
+                                        self.env.timeout(patient.inpatient_exp_los - (patient.second_request_time - patient.first_request_time))) # they renege
+
+                    if bed_resource in result_of_queue:
+                        self.event_log.append(
+                        {'patient' : patient.id,
+                        'pathway' : patient.department,
+                        'event_type' : 'resource_use',
+                        'event' : 'admission_begins',
+                        'time' : self.env.now,
+                        'resource_id' : result_of_queue[bed_resource].id_attribute
+                        }
+                        )
+                                
+                        sampled_bed_time = patient.inpatient_los
+                        yield self.env.timeout(sampled_bed_time)
+
+                        self.event_log.append(
+                        {'patient' : patient.id,
+                        'pathway' : patient.department,
+                        'event_type' : 'resource_use_end',
+                        'event' : 'admission_complete',
+                        'time' : self.env.now,
+                        'resource_id' : result_of_queue[bed_resource].id_attribute
+                        }
+                        )
+
+                        self.nelbed.put(result_of_queue[bed_resource])
+                    
+                    # # If patient reneges
+                    else:
+                        bed_resource.cancel() # SR - Think we need to ensure original request is cancelled at this point
+                        self.event_log.append(
+                            {'patient' : patient.id,
+                            'pathway' : patient.department,
+                            'event_type' : 'arrival_departure',
+                            'event' : 'renege',
+                            'time' : self.env.now,
+                            }
+                            )
+                        
+                self.event_log.append(
+                    {'patient' : patient.id,
+                    'pathway' : patient.department,
+                    'event_type' : 'arrival_departure',
+                    'event' : 'depart',
+                    'time' : self.env.now}
+                    )
+
     
     def attend_other(self, patient):
         self.event_log.append(
@@ -283,6 +469,8 @@ class Trial:
         df = (df.reset_index()
                 .rename_axis(None,axis=1))
         #df["total_los"] = df["depart"] - df["arrival"]
+        if "renege" not in df.columns:
+            df["renege"] = np.nan
         df["q_time"] = df["admission_begins"] - df["admission_wait_begins"]
         df["q_time_hrs"] = df["q_time"] / 60.0
         df["q_time2_hrs"] = np.where(
@@ -291,8 +479,6 @@ class Trial:
                                 df["renege"] - df["admission_wait_begins"]
                                 ) / 60.0
         df["treatment_time"] = df["admission_complete"] - df["admission_begins"]
-        if "renege" not in df.columns:
-            df["renege"] = np.nan
         self.patient_df = df
         #self.patient_df_nowarmup = df[df["arrival"] > g.warm_up_period]
         #self.patient_df_nowarmup = df[(df["arrival"] > g.warm_up_period) 
@@ -418,8 +604,12 @@ class Trial:
 # my_trial = Trial()
 # print(f"Running {g.number_of_runs} simulations......")
 # all_event_logs, patient_df, run_summary_df, trial_summary_df =  my_trial.run_trial()
-# #display(my_trial.all_event_logs.head(1000))
+# # #display(my_trial.all_event_logs.head(1000))
 # display(my_trial.patient_df.tail(1000))
-# #display(my_trial.patient_df_nowarmup.head(1000))
-# display(my_trial.run_summary_df)
-# display(my_trial.trial_summary_df)
+# # #display(my_trial.patient_df_nowarmup.head(1000))
+# # display(my_trial.run_summary_df)
+# # display(my_trial.trial_summary_df)
+
+# # test for no admission complete and no renege without depart timestamps
+# patient_df[(~patient_df['admission_complete'].isna()) & (patient_df['depart'].isna())]
+# patient_df[(~patient_df['admission_complete'].isna()) & (patient_df['depart'].isna())]
