@@ -244,6 +244,9 @@ with tab1:
                     st.pyplot(fig)
             else:
                 st.write("Waiting times cannot be plotted on a histogram as there are no significant waits for admission")
+
+            st.write("This is a table of metrics for each individual run")
+            st.dataframe(run_summary_df)
             # ###################
 
 with tab_animate:
