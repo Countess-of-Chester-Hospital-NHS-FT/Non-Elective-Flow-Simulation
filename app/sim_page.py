@@ -108,6 +108,21 @@ with st.sidebar:
                                              "their waiting time crosses a "
                                              "threshold (which is set randomly "
                                              "for each person)")
+        prioritisation_slider = st.select_slider("Turn prioritisation on/off",
+                                             options=off_on,
+                                             value=off_on[0],
+                                             help="A proportion of ED patients"
+                                             " enter the model with higher priority"
+                                             "when turned on")
+        prioritisation_prop_slider = st.slider("Adjust proportion of high priority patients",
+                                                min_value=0.0,
+                                                max_value=1.0,
+                                                step=0.1,
+                                                value=0.2,
+                                                help="Proportion of patients entering"
+                                                " ED with high priority for admission"
+                                                " (will only have an effect if "
+                                                "prioritisation is turned on)")
         
         
     st.markdown("---")
@@ -132,6 +147,8 @@ g.number_of_runs = num_runs_slider
 g.escalation = (off_on.index(escalation_slider))
 g.escalation_threshold = escalation_threshold_slider * 60
 g.reneging = (off_on.index(renege_slider))
+g.prioritisation = (off_on.index(prioritisation_slider))
+g.prop_high_priority = prioritisation_prop_slider
 
 
 tab1, tab_animate, tab2 = st.tabs(["Run Virtual Hospital", "View Animation", "Compare scenarios"])
@@ -155,10 +172,12 @@ with tab1:
             inputs_for_state = pd.DataFrame({
             'Input': ['Mean LoS', 'Number of beds', 'Admissions via ED', 
                 'Admissions via SDEC', 'Admissions via Other', 'Number of runs',
-                'Escalation', 'Escalation threshold', 'Reneging'],
+                'Escalation', 'Escalation threshold', 'Reneging', 'Prioritisation',
+                'Proportion high priority'],
             col_name: [mean_los_slider, num_nelbeds_slider, daily_ed_adm_slider, 
                 daily_sdec_adm_slider, daily_other_adm_slider, num_runs_slider,
-                escalation_slider, escalation_threshold_slider, renege_slider]
+                escalation_slider, escalation_threshold_slider, renege_slider,
+                prioritisation_slider, prioritisation_prop_slider]
             }).set_index('Input')[col_name]
             # Append input series to the session state
             st.session_state['session_inputs'].append(inputs_for_state)
