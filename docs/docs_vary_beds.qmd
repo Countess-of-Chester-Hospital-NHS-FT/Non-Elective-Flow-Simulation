@@ -1,0 +1,58 @@
+---
+title: "Non-Elective Flow Model Documentation"
+execute:
+  echo: false
+format:
+    html:
+        toc: true
+        embed-resources: true
+---
+```{python}
+#| label: library-imports
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import sys
+import os
+import report_functions
+#import distribution_functions
+root_dir = os.path.abspath(os.path.join(os.getcwd(), '..'))
+sys.path.append(root_dir)
+from app.model import g, Trial
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import report_functions
+
+```
+
+# Effect of having more / less beds
+In this report we plot what happens to the metrics under varying levels of demand
+for admission, while keeping all other factors the same.
+Then we choose starting scenarios where the system is somewhat overcapacity or very
+over capacity, add different numbers of beds and see what effect this has on
+the situation.
+
+```{python}
+#vary level of demand
+df, fig, value_vars=report_functions.vary_demand(min_demand=36, max_demand=66, step=2, prop_sdec=0,
+beds=456, losi=10, runs=10, escalation=0, reneging=0, prioritisation=0)
+
+vlines=[48, 54, 60]
+
+for i in range(len(vlines)):
+    fig.add_vline(
+        x=48,
+        line_dash='dash',
+        line_color='black'
+    )
+
+fig.show()
+
+
+
+df[df['Demand'].isin(vlines)]
+
+df=df[value_vars]
+
+df
+```
