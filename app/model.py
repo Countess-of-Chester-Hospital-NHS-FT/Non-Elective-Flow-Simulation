@@ -41,12 +41,12 @@ class Model:
         self.run_number = run_number
 
         # Initialise distributions for generators
-        self.ed_inter_visit_dist = Exponential(mean = g.ed_inter_visit, random_seed = (self.run_number+1)*2)
-        self.sdec_inter_visit_dist = Exponential(mean = g.sdec_inter_visit, random_seed = (self.run_number+1)*3)
-        self.other_inter_visit_dist = Exponential(mean = g.other_inter_visit, random_seed = (self.run_number+1)*4)
-        self.exp_time_in_bed_dist = Lognormal((824.2310988815528 * 60), (1747.3512592813645 * 60), random_seed = (self.run_number+1)*5) # governs reneging behaviour - fixed (values 2023-march 2025)
-        self.mean_time_in_bed_dist = Lognormal(g.mean_time_in_bed, g.sd_time_in_bed, random_seed = (self.run_number+1)*5) # alterable via the interface
-        self.priority_dist = Uniform(0, 1, (self.run_number+1)*6)
+        self.ed_inter_visit_dist = Exponential(mean = g.ed_inter_visit, random_seed = (self.run_number+3)*2)
+        self.sdec_inter_visit_dist = Exponential(mean = g.sdec_inter_visit, random_seed = (self.run_number+3)*3)
+        self.other_inter_visit_dist = Exponential(mean = g.other_inter_visit, random_seed = (self.run_number+3)*4)
+        self.exp_time_in_bed_dist = Lognormal((824.2310988815528 * 60), (1747.3512592813645 * 60), random_seed = (self.run_number+3)*5) # governs reneging behaviour - fixed (values 2023-march 2025)
+        self.mean_time_in_bed_dist = Lognormal(g.mean_time_in_bed, g.sd_time_in_bed, random_seed = (self.run_number+3)*5) # alterable via the interface
+        self.priority_dist = Uniform(0, 1, (self.run_number+3)*6)
         self.init_resources()
 
     def init_resources(self):
