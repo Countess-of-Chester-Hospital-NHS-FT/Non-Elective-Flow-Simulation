@@ -193,7 +193,9 @@ with tab1:
 
             metrics=['Total Admission Demand', 'Admissions via ED',
                          'Mean Q Time (Hrs)', '95th Percentile Q Time (Hrs)',
-                         '12hr DTAs (per day)', 'Reneged (per day)']
+                         '12hr DTAs (per day)', 'Reneged (per day)',
+                         '12hr LoS Breaches (per day)', '24hr LoS Breaches (per day)',
+                         '48hr LoS Breaches (per day)', '72hr LoS Breaches (per day)']
             trial_summary_df=trial_summary_df[trial_summary_df.index.isin(metrics)]
 
             st.dataframe(trial_summary_df)

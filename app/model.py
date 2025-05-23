@@ -559,6 +559,33 @@ class Trial:
                             x.notna()
                         ].gt(12).sum() / (g.sim_duration/1440)
             )),
+            los_24hr=("q_time2_hrs", lambda x: (
+                        x[  (
+                            (run_summary.loc[x.index, "admission_begins"] > g.warm_up_period) |
+                            (run_summary.loc[x.index, "renege"] > g.warm_up_period)
+                            ) &
+                            (run_summary.loc[x.index, "pathway"] == "ED") &
+                            x.notna()
+                        ].gt(24).sum() / (g.sim_duration/1440)
+            )),
+            los_48hr=("q_time2_hrs", lambda x: (
+                        x[  (
+                            (run_summary.loc[x.index, "admission_begins"] > g.warm_up_period) |
+                            (run_summary.loc[x.index, "renege"] > g.warm_up_period)
+                            ) &
+                            (run_summary.loc[x.index, "pathway"] == "ED") &
+                            x.notna()
+                        ].gt(48).sum() / (g.sim_duration/1440)
+            )),
+            los_72hr=("q_time2_hrs", lambda x: (
+                        x[  (
+                            (run_summary.loc[x.index, "admission_begins"] > g.warm_up_period) |
+                            (run_summary.loc[x.index, "renege"] > g.warm_up_period)
+                            ) &
+                            (run_summary.loc[x.index, "pathway"] == "ED") &
+                            x.notna()
+                        ].gt(72).sum() / (g.sim_duration/1440)
+            )),
             sdec_admissions=("patient", lambda x: (
                         ((run_summary.loc[x.index, "admission_begins"] > g.warm_up_period
                         ) & (run_summary.loc[x.index, "pathway"] == "SDEC")).sum()))
@@ -575,6 +602,9 @@ class Trial:
             'ed_95':'95th Percentile Q Time (Hrs)',
             'dtas_12hr':'12hr DTAs (per day)',
             'los_12hr':'12hr LoS Breaches (per day)',
+            'los_24hr':'24hr LoS Breaches (per day)',
+            'los_48hr':'48hr LoS Breaches (per day)',
+            'los_72hr':'72hr LoS Breaches (per day)',
             'sdec_admissions':'SDEC Admissions'
         })
         self.run_summary_df = run_summary
@@ -599,14 +629,13 @@ class Trial:
     
 
 #For testing
-# my_trial = Trial()
-# print(f"Running {g.number_of_runs} simulations......")
-# all_event_logs, patient_df, run_summary_df, trial_summary_df =  my_trial.run_trial()
+#my_trial = Trial()
+#print(f"Running {g.number_of_runs} simulations......")
+#all_event_logs, patient_df, run_summary_df, trial_summary_df =  my_trial.run_trial()
 # # # # # #display(my_trial.all_event_logs.head(1000))
 # display(my_trial.patient_df.tail(1000))
 # # # # # #display(my_trial.patient_df_nowarmup.head(1000))
-# # # # # display(my_trial.run_summary_df)
-# # # # # display(my_trial.trial_summary_df)
+#display(my_trial.trial_summary_df)
 
 # # # # # test for no admission complete and no renege without depart timestamps
 # # # display(patient_df[(~patient_df['admission_complete'].isna()) & (patient_df['depart'].isna())])
