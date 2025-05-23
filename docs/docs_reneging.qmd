@@ -44,8 +44,8 @@ n=20
 mean_list_r, std_list_r=distribution_functions.make_lognormal_lists(mode, n)
 
 #make plot with both the traces
-mean_list=[mean_list_d[12], mean_list_r[12]]
-std_list=[std_list_d[12], std_list_r[12]]
+mean_list=[mean_list_d[10], mean_list_r[10]]
+std_list=[std_list_d[10], std_list_r[10]]
 
 fig, df=distribution_functions.visualise_lognormal(mean_list, std_list)
 
@@ -75,8 +75,8 @@ and vice versa.
 
 ```{python}
 #initialise distributions
-time_to_renege_dist = Lognormal(mean_list_r[12], std_list_r[12], random_seed = 5)
-inpatient_los_dist = Lognormal(mean_list_d[12], std_list_d[12], random_seed = 5)
+time_to_renege_dist = Lognormal(mean_list_r[10], std_list_r[10], random_seed = 5)
+inpatient_los_dist = Lognormal(mean_list_d[10], std_list_d[10], random_seed = 5)
 
 patient_list=[]
 inp_los_list=[]

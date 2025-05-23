@@ -67,6 +67,7 @@ sd_time_in_bed_list = [248.9837009930806,
  661.6297177111919,
  703.1030388812503,
  747.4578727809351]
+off_on = ["off", "on"]
 
 with st.sidebar:
     daily_ed_adm_slider = st.slider("Adjust daily demand for admission via ED",
@@ -85,6 +86,44 @@ with st.sidebar:
     with st.expander("Advanced Parameters"):
         num_runs_slider = st.slider("Adjust number of runs the model does",
                                      min_value=10, max_value=20, value=15)
+        escalation_slider = st.select_slider("Turn escalation on/off",
+                                             options=off_on,
+                                             value=off_on[1],
+                                             help="Increase priority of patients"
+                                               " after threshold number of hours"
+                                                " (see slider below)")
+        escalation_threshold_slider = st.slider("Adjust threshold for escalation",
+                                                min_value=0,
+                                                max_value=100,
+                                                value=40,
+                                                help="Number of hours wait after"
+                                                " which patients priority increases"
+                                                " (will only have an effect if "
+                                                "escalation is turned on)")
+        renege_slider = st.select_slider("Turn reneging on/off",
+                                             options=off_on,
+                                             value=off_on[1],
+                                             help="When reneging is on patients "
+                                             "can be discharged from ED if "
+                                             "their waiting time crosses a "
+                                             "threshold (which is set randomly "
+                                             "for each person)")
+        prioritisation_slider = st.select_slider("Turn prioritisation on/off",
+                                             options=off_on,
+                                             value=off_on[0],
+                                             help="A proportion of ED patients"
+                                             " enter the model with higher priority"
+                                             "when turned on")
+        prioritisation_prop_slider = st.slider("Adjust proportion of high priority patients",
+                                                min_value=0.0,
+                                                max_value=1.0,
+                                                step=0.1,
+                                                value=0.2,
+                                                help="Proportion of patients entering"
+                                                " ED with high priority for admission"
+                                                " (will only have an effect if "
+                                                "prioritisation is turned on)")
+        
         
     st.markdown("---")
 
@@ -105,6 +144,12 @@ g.ed_inter_visit = 1440/daily_ed_adm_slider
 g.sdec_inter_visit = 1440/daily_sdec_adm_slider if daily_sdec_adm_slider != 0 else 0
 g.other_inter_visit = 1440/daily_other_adm_slider if daily_other_adm_slider != 0 else 0
 g.number_of_runs = num_runs_slider
+g.escalation = (off_on.index(escalation_slider))
+g.escalation_threshold = escalation_threshold_slider * 60
+g.reneging = (off_on.index(renege_slider))
+g.prioritisation = (off_on.index(prioritisation_slider))
+g.prop_high_priority = prioritisation_prop_slider
+
 
 tab1, tab_animate, tab2 = st.tabs(["Run Virtual Hospital", "View Animation", "Compare scenarios"])
 
@@ -126,9 +171,13 @@ with tab1:
             # make dataframe with inputs, set an index, select as a series
             inputs_for_state = pd.DataFrame({
             'Input': ['Mean LoS', 'Number of beds', 'Admissions via ED', 
-                'Admissions via SDEC', 'Admissions via Other', 'Number of runs'],
+                'Admissions via SDEC', 'Admissions via Other', 'Number of runs',
+                'Escalation', 'Escalation threshold', 'Reneging', 'Prioritisation',
+                'Proportion high priority'],
             col_name: [mean_los_slider, num_nelbeds_slider, daily_ed_adm_slider, 
-                daily_sdec_adm_slider, daily_other_adm_slider, num_runs_slider]
+                daily_sdec_adm_slider, daily_other_adm_slider, num_runs_slider,
+                escalation_slider, escalation_threshold_slider, renege_slider,
+                prioritisation_slider, prioritisation_prop_slider]
             }).set_index('Input')[col_name]
             # Append input series to the session state
             st.session_state['session_inputs'].append(inputs_for_state)
@@ -144,7 +193,9 @@ with tab1:
 
             metrics=['Total Admission Demand', 'Admissions via ED',
                          'Mean Q Time (Hrs)', '95th Percentile Q Time (Hrs)',
-                         '12hr DTAs (per day)', 'Reneged (per day)']
+                         '12hr DTAs (per day)', 'Reneged (per day)',
+                         '12hr LoS Breaches (per day)', '24hr LoS Breaches (per day)',
+                         '48hr LoS Breaches (per day)', '72hr LoS Breaches (per day)']
             trial_summary_df=trial_summary_df[trial_summary_df.index.isin(metrics)]
 
             st.dataframe(trial_summary_df)
@@ -214,6 +265,9 @@ with tab1:
                     st.pyplot(fig)
             else:
                 st.write("Waiting times cannot be plotted on a histogram as there are no significant waits for admission")
+
+            st.write("This is a table of metrics for each individual run")
+            st.dataframe(run_summary_df)
             # ###################
 
 with tab_animate:
