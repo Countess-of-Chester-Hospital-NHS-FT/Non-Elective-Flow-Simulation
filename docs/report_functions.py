@@ -12,8 +12,8 @@ from app.model import g, Trial
 def vary_demand(min_demand, max_demand, step, prop_sdec, beds, losi, runs,
                  escalation, reneging, prioritisation):
     
-    start_time = time.time()
-    print(f'function started {time.strftime("%H:%M:%S", time.gmtime(start_time))}')
+    #start_time = time.time()
+    #print(f'function started {time.strftime("%H:%M:%S", time.gmtime(start_time))}')
     
     # set range of values for los
     mean_time_in_bed_list = [138.7382025354152,
@@ -118,7 +118,7 @@ def vary_demand(min_demand, max_demand, step, prop_sdec, beds, losi, runs,
         los_72hr_list.append(value_los_72hr)
 
     df['Demand'] = demand_list
-    df['Daily DTAs'] = dtas_list
+    df['Daily 12hr DTAs'] = dtas_list
     df['ED Admissions'] = edadmissions_list
     df['Reneged (per day)'] = reneged_list
     df['Mean DTA Wait'] = meanwait_list
@@ -130,10 +130,12 @@ def vary_demand(min_demand, max_demand, step, prop_sdec, beds, losi, runs,
     df['Daily 72hr LoS Breaches'] = los_72hr_list
 
     #Specify metrics you want to show
-    value_vars=['Daily DTAs', 
+    value_vars=[
                                 'ED Admissions', 
                                 'SDEC Admissions',
+                                'Daily 12hr DTAs', 
                                 'Daily 12hr LoS Breaches', 
+                                
                                 #'Daily 24hr LoS Breaches',
                                 #'Daily 48hr LoS Breaches', 
                                 #'Daily 72hr LoS Breaches',
@@ -154,12 +156,37 @@ def vary_demand(min_demand, max_demand, step, prop_sdec, beds, losi, runs,
     fig.update_layout(template='plotly_white')
 
 
-    stop_time = time.time()
-    print(f'function stopped {time.strftime("%H:%M:%S", time.gmtime(stop_time))}')
-    timer=stop_time-start_time
-    print(f'timer: {time.strftime("%H:%M:%S", time.gmtime(timer))}')
+    #stop_time = time.time()
+    #print(f'function stopped {time.strftime("%H:%M:%S", time.gmtime(stop_time))}')
+    #timer=stop_time-start_time
+    #print(f'timer: {time.strftime("%H:%M:%S", time.gmtime(timer))}')
 
     return df, fig, value_vars
 
 # df, fig, value_vars = vary_demand(min_demand=36, max_demand=66, step=2, prop_sdec=0,
 # beds=456, losi=10, runs=10, escalation=0, reneging=0, prioritisation=0)
+
+# df, fig, value_vars=vary_demand(min_demand=36, max_demand=66, step=2, prop_sdec=0,
+# beds=456, losi=10, runs=10, escalation=0, reneging=0, prioritisation=0)
+
+# vlines=[48, 54, 60]
+
+# for i in range(len(vlines)):
+#     fig.add_vline(
+#         x=48,
+#         line_dash='dash',
+#         line_color='black'
+#     )
+
+# fig.show()
+
+# df0=df
+
+# df=df[df['Demand'].isin(vlines)]
+
+# value_vars.insert(0, 'Demand')
+
+# df=df[value_vars]
+
+# df.set_index('Demand', inplace=True)
+

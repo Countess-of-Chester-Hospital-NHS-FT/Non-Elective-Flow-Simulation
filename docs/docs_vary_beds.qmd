@@ -39,20 +39,149 @@ beds=456, losi=10, runs=10, escalation=0, reneging=0, prioritisation=0)
 
 vlines=[48, 54, 60]
 
-for i in range(len(vlines)):
+for vline in vlines:
     fig.add_vline(
-        x=48,
+        x=vline,
         line_dash='dash',
-        line_color='black'
+        line_color='black',
+        opacity=0.7
     )
 
 fig.show()
 
+df0=df
 
+df=df[df['Demand'].isin(vlines)]
 
-df[df['Demand'].isin(vlines)]
+value_vars.insert(0, 'Demand')
 
 df=df[value_vars]
+
+df.set_index('Demand', inplace=True)
+
+df
+```
+
+## 10 more beds - 466
+```{python}
+df, fig, value_vars=report_functions.vary_demand(min_demand=36, max_demand=66, step=2, prop_sdec=0,
+beds=466, losi=10, runs=10, escalation=0, reneging=0, prioritisation=0)
+
+vlines=[48, 54, 60]
+
+for vline in vlines:
+    fig.add_vline(
+        x=vline,
+        line_dash='dash',
+        line_color='black',
+        opacity=0.7
+    )
+
+fig.show()
+
+df0=df
+
+df=df[df['Demand'].isin(vlines)]
+
+value_vars.insert(0, 'Demand')
+
+df=df[value_vars]
+
+df.set_index('Demand', inplace=True)
+
+df
+```
+
+## 20 more beds - 476
+
+```{python}
+df, fig, value_vars=report_functions.vary_demand(min_demand=36, max_demand=66, step=2, prop_sdec=0,
+beds=476, losi=10, runs=10, escalation=0, reneging=0, prioritisation=0)
+
+vlines=[48, 54, 60]
+
+for vline in vlines:
+    fig.add_vline(
+        x=vline,
+        line_dash='dash',
+        line_color='black',
+        opacity=0.7
+    )
+
+fig.show()
+
+df0=df
+
+df=df[df['Demand'].isin(vlines)]
+
+value_vars.insert(0, 'Demand')
+
+df=df[value_vars]
+
+df.set_index('Demand', inplace=True)
+
+df
+```
+
+## Reducing LoS - 1 notch
+
+```{python}
+df, fig, value_vars=report_functions.vary_demand(min_demand=36, max_demand=66, step=2, prop_sdec=0,
+beds=456, losi=9, runs=10, escalation=0, reneging=0, prioritisation=0)
+
+vlines=[48, 54, 60]
+
+for vline in vlines:
+    fig.add_vline(
+        x=vline,
+        line_dash='dash',
+        line_color='black',
+        opacity=0.7
+    )
+
+fig.show()
+
+df0=df
+
+df=df[df['Demand'].isin(vlines)]
+
+value_vars.insert(0, 'Demand')
+
+df=df[value_vars]
+
+df.set_index('Demand', inplace=True)
+
+df
+```
+
+
+## Reducing LoS - 2 notches
+
+```{python}
+df, fig, value_vars=report_functions.vary_demand(min_demand=36, max_demand=66, step=2, prop_sdec=0,
+beds=456, losi=8, runs=10, escalation=0, reneging=0, prioritisation=0)
+
+vlines=[48, 54, 60]
+
+for vline in vlines:
+    fig.add_vline(
+        x=vline,
+        line_dash='dash',
+        line_color='black',
+        opacity=0.7
+    )
+
+fig.show()
+
+df0=df
+
+df=df[df['Demand'].isin(vlines)]
+
+value_vars.insert(0, 'Demand')
+
+df=df[value_vars]
+
+df.set_index('Demand', inplace=True)
 
 df
 ```
