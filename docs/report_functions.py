@@ -166,27 +166,18 @@ def vary_demand(min_demand, max_demand, step, prop_sdec, beds, losi, runs,
 # df, fig, value_vars = vary_demand(min_demand=36, max_demand=66, step=2, prop_sdec=0,
 # beds=456, losi=10, runs=10, escalation=0, reneging=0, prioritisation=0)
 
-# df, fig, value_vars=vary_demand(min_demand=36, max_demand=66, step=2, prop_sdec=0,
+def find_max_demand(df, metric):
+
+    # Find the index where 'Daily 12hr DTAs' first exceeds 1
+    idx = df[df[metric] > 1].index.min()
+
+    # Get the Demand just before the threshold breach
+    max_demand = df.loc[idx - 1, 'Demand'] if idx and idx > 0 else None
+
+    return max_demand
+
+# df, fig, value_vars = vary_demand(min_demand=36, max_demand=66, step=2, prop_sdec=0,
 # beds=456, losi=10, runs=10, escalation=0, reneging=0, prioritisation=0)
 
-# vlines=[48, 54, 60]
-
-# for i in range(len(vlines)):
-#     fig.add_vline(
-#         x=48,
-#         line_dash='dash',
-#         line_color='black'
-#     )
-
-# fig.show()
-
-# df0=df
-
-# df=df[df['Demand'].isin(vlines)]
-
-# value_vars.insert(0, 'Demand')
-
-# df=df[value_vars]
-
-# df.set_index('Demand', inplace=True)
+# max_demand = find_max_demand(df, 'Daily 12hr DTAs')
 
