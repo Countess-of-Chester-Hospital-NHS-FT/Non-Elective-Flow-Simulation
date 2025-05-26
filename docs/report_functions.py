@@ -77,7 +77,7 @@ def vary_demand(min_demand, max_demand, step, prop_sdec, beds, losi, runs,
 
 
     for i in range(len(demand_list)):
-        print(demand_list[i])
+        #print(demand_list[i])
 
         #overwrite g class - so its easy to play around with
         g.ed_inter_visit = (1440 / ed_list[i]) # convert daily arrivals into inter-arrival time
