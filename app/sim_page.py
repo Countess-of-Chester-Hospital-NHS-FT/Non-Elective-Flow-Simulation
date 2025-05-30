@@ -309,3 +309,21 @@ with tab2:
         st.write("Here are your results for each scenario")
         current_state_df = pd.DataFrame(st.session_state['session_results']).T
         st.dataframe(current_state_df)
+
+        plot_df = pd.DataFrame(st.session_state['session_results'])
+
+        #st.write("Available columns:", current_state_df.index.tolist())
+        #st.write(current_state_df.index)
+
+        # Create bar chart for 12hr LOS breaches
+        fig = px.bar(
+            plot_df,
+            x=plot_df.index,
+            y="12hr LoS Breaches (per day)",
+            title='12hr Length of Stay Breaches per Day by Scenario'
+        )
+        fig.update_layout(
+            xaxis_title="Scenario",
+            yaxis_title="12 hr LoS Breaches per Day"
+        )
+        st.plotly_chart(fig, use_container_width=True)
