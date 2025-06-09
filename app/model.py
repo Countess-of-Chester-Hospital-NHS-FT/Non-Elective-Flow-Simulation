@@ -631,13 +631,13 @@ class Trial:
     
 
 #For testing
-#my_trial = Trial()
-#print(f"Running {g.number_of_runs} simulations......")
-#all_event_logs, patient_df, run_summary_df, trial_summary_df =  my_trial.run_trial()
+# my_trial = Trial()
+# print(f"Running {g.number_of_runs} simulations......")
+# all_event_logs, patient_df, run_summary_df, trial_summary_df =  my_trial.run_trial()
 # # # # # #display(my_trial.all_event_logs.head(1000))
 # display(my_trial.patient_df.tail(1000))
 # # # # # #display(my_trial.patient_df_nowarmup.head(1000))
-#display(my_trial.trial_summary_df)
+# display(my_trial.trial_summary_df)
 
 # # # # # test for no admission complete and no renege without depart timestamps
 # # # display(patient_df[(~patient_df['admission_complete'].isna()) & (patient_df['depart'].isna())])

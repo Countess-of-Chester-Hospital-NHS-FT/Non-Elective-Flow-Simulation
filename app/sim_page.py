@@ -268,6 +268,14 @@ with tab1:
 
             st.write("This is a table of metrics for each individual run")
             st.dataframe(run_summary_df)
+
+            # run5_df = ed_df_nowarmup[ed_df_nowarmup['run'] == 6]
+
+            # if run5_df['q_time_hrs'].mean() > 1 :
+            #     fig_runhist = px.histogram(run5_df, x='q_time')
+            #     st.plotly_chart(fig_runhist, use_container_width=True)
+            # else:
+            #     st.write("Waiting times cannot be plotted on a histogram as there are no significant waits for admission")
             # ###################
 
 with tab_animate:
