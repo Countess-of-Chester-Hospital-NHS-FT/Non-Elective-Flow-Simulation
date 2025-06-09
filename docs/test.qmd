@@ -1,0 +1,33 @@
+---
+title: "Non-Elective Flow Model Documentation"
+execute:
+  echo: false
+format:
+    html:
+        toc: true
+        embed-resources: true
+---
+
+```{python}
+#| label: library-imports
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import sys
+import os
+import report_functions
+import distribution_functions
+root_dir = os.path.abspath(os.path.join(os.getcwd(), '..'))
+sys.path.append(root_dir)
+from app.model import g, Trial
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import report_functions
+```
+
+```{python}
+#| label: model inputs
+beds=456
+```
+
+Hello `{python} beds`

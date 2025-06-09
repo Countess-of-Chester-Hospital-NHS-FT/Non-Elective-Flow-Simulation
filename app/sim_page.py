@@ -268,6 +268,14 @@ with tab1:
 
             st.write("This is a table of metrics for each individual run")
             st.dataframe(run_summary_df)
+
+            # run5_df = ed_df_nowarmup[ed_df_nowarmup['run'] == 6]
+
+            # if run5_df['q_time_hrs'].mean() > 1 :
+            #     fig_runhist = px.histogram(run5_df, x='q_time')
+            #     st.plotly_chart(fig_runhist, use_container_width=True)
+            # else:
+            #     st.write("Waiting times cannot be plotted on a histogram as there are no significant waits for admission")
             # ###################
 
 with tab_animate:
@@ -309,3 +317,21 @@ with tab2:
         st.write("Here are your results for each scenario")
         current_state_df = pd.DataFrame(st.session_state['session_results']).T
         st.dataframe(current_state_df)
+
+        plot_df = pd.DataFrame(st.session_state['session_results'])
+
+        #st.write("Available columns:", current_state_df.index.tolist())
+        #st.write(current_state_df.index)
+
+        # Create bar chart for 12hr LOS breaches
+        fig = px.bar(
+            plot_df,
+            x=plot_df.index,
+            y="12hr LoS Breaches (per day)",
+            title='12hr Length of Stay Breaches per Day by Scenario'
+        )
+        fig.update_layout(
+            xaxis_title="Scenario",
+            yaxis_title="12 hr LoS Breaches per Day"
+        )
+        st.plotly_chart(fig, use_container_width=True)

@@ -1,0 +1,223 @@
+---
+title: "Non-Elective Flow Model Documentation"
+execute:
+  echo: false
+format:
+    html:
+        toc: true
+        embed-resources: true
+---
+
+```{python}
+#| label: library-imports
+import pandas as pd
+import numpy as np
+import plotly.express as px
+import sys
+import os
+import report_functions
+import distribution_functions
+root_dir = os.path.abspath(os.path.join(os.getcwd(), '..'))
+sys.path.append(root_dir)
+from app.model import g, Trial
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+import report_functions
+```
+
+```{python}
+#| label: model inputs
+beds=456
+
+# get los values
+mode=16
+mean_list, std_list = distribution_functions.make_lognormal_lists(mode, 20)
+
+```
+
+## Default beds and los
+
+```{python}
+df, fig, value_vars = report_functions.vary_demand(min_demand=36, max_demand=66, step=2, prop_sdec=0,
+beds=456, losi=10, runs=10, escalation=0, reneging=0, prioritisation=0)
+
+max_demand = report_functions.find_max_demand(df, 'Daily 12hr DTAs')
+
+fig.add_vline(
+        x=max_demand,
+        line_dash='dash',
+        line_color='black',
+        opacity=0.7
+    )
+
+fig.update_layout(
+    title_text=f"Beds: {beds}, LoS: {round(mean_list[10])} Hrs, Max Demand: {max_demand}"
+)
+
+fig.show()
+
+value_vars.insert(0, 'Demand')
+
+df=df[value_vars]
+
+df.set_index('Demand', inplace=True)
+
+#df
+```
+
+
+A hospital of `{python} beds` beds and mean los of `{python} mean_list[10]` has a maximum demand of `{python} max_demand`.
+
+## Default beds, Reduced LoS 1
+
+```{python}
+df, fig, value_vars = report_functions.vary_demand(min_demand=36, max_demand=66, step=2, prop_sdec=0,
+beds=456, losi=9, runs=10, escalation=0, reneging=0, prioritisation=0)
+
+max_demand = report_functions.find_max_demand(df, 'Daily 12hr DTAs')
+
+fig.add_vline(
+        x=max_demand,
+        line_dash='dash',
+        line_color='black',
+        opacity=0.7
+    )
+
+fig.update_layout(
+    title_text=f"Beds: {beds}, LoS: {round(mean_list[9])} Hrs, Max Demand: {max_demand}"
+)
+
+fig.show()
+
+value_vars.insert(0, 'Demand')
+
+df=df[value_vars]
+
+df.set_index('Demand', inplace=True)
+
+#df
+```
+
+# Default beds, Reduced Los 2
+
+```{python}
+df, fig, value_vars = report_functions.vary_demand(min_demand=36, max_demand=66, step=2, prop_sdec=0,
+beds=456, losi=8, runs=10, escalation=0, reneging=0, prioritisation=0)
+
+max_demand = report_functions.find_max_demand(df, 'Daily 12hr DTAs')
+
+fig.add_vline(
+        x=max_demand,
+        line_dash='dash',
+        line_color='black',
+        opacity=0.7
+    )
+
+fig.update_layout(
+    title_text=f"Beds: {beds}, LoS: {round(mean_list[8])} Hrs, Max Demand: {max_demand}"
+)
+
+fig.show()
+
+value_vars.insert(0, 'Demand')
+
+df=df[value_vars]
+
+df.set_index('Demand', inplace=True)
+
+#df
+```
+
+## Default LoS, Increased beds (10)
+
+```{python}
+beds=466
+
+df, fig, value_vars = report_functions.vary_demand(min_demand=36, max_demand=66, step=2, prop_sdec=0,
+beds=beds, losi=10, runs=10, escalation=0, reneging=0, prioritisation=0)
+
+max_demand = report_functions.find_max_demand(df, 'Daily 12hr DTAs')
+
+fig.add_vline(
+        x=max_demand,
+        line_dash='dash',
+        line_color='black',
+        opacity=0.7
+    )
+
+fig.update_layout(
+    title_text=f"Beds: {beds}, LoS: {round(mean_list[10])} Hrs, Max Demand: {max_demand}"
+)
+
+fig.show()
+
+value_vars.insert(0, 'Demand')
+
+df=df[value_vars]
+
+df.set_index('Demand', inplace=True)
+
+#df
+```
+
+## Default LoS, Increased beds (20)
+
+```{python}
+beds= 476
+
+df, fig, value_vars = report_functions.vary_demand(min_demand=36, max_demand=66, step=2, prop_sdec=0,
+beds=beds, losi=10, runs=10, escalation=0, reneging=0, prioritisation=0)
+
+max_demand = report_functions.find_max_demand(df, 'Daily 12hr DTAs')
+
+fig.add_vline(
+        x=max_demand,
+        line_dash='dash',
+        line_color='black',
+        opacity=0.7
+    )
+
+fig.update_layout(
+    title_text=f"Beds: {beds}, LoS: {round(mean_list[10])} Hrs, Max Demand: {max_demand}"
+)
+
+fig.show()
+
+value_vars.insert(0, 'Demand')
+
+df=df[value_vars]
+
+df.set_index('Demand', inplace=True)
+
+#df
+```
+
+## Increased beds (20), Increased LoS
+
+```{python}
+df, fig, value_vars = report_functions.vary_demand(min_demand=36, max_demand=66, step=2, prop_sdec=0,
+beds=beds, losi=11, runs=10, escalation=0, reneging=0, prioritisation=0)
+
+max_demand = report_functions.find_max_demand(df, 'Daily 12hr DTAs')
+
+fig.add_vline(
+        x=max_demand,
+        line_dash='dash',
+        line_color='black',
+        opacity=0.7
+    )
+
+fig.update_layout(
+    title_text=f"Beds: {beds}, LoS: {round(mean_list[11])} Hrs, Max Demand: {max_demand}"
+)
+
+fig.show()
+
+value_vars.insert(0, 'Demand')
+
+df=df[value_vars]
+
+df.set_index('Demand', inplace=True)
+
+#df
+```

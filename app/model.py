@@ -471,10 +471,16 @@ class Trial:
             df["renege"] = np.nan
         df["q_time"] = df["admission_begins"] - df["admission_wait_begins"]
         df["q_time_hrs"] = df["q_time"] / 60.0
-        df["q_time2_hrs"] = np.where(
-                                df["admission_begins"].notnull(),
-                                df["admission_begins"] - df["admission_wait_begins"],
-                                df["renege"] - df["admission_wait_begins"]
+        # df["q_time2_hrs"] = np.where(
+        #                         df["admission_begins"].notnull(),
+        #                         df["admission_begins"] - df["admission_wait_begins"],
+        #                         df["renege"] - df["admission_wait_begins"]
+        #                         ) / 60.0
+        df["q_time2_hrs"] = np.select(
+                                [df["admission_begins"].notnull(),df["renege"].notnull()],
+                                [df["admission_begins"] - df["admission_wait_begins"],
+                                         df["renege"] - df["admission_wait_begins"]],
+                                (g.warm_up_period+g.sim_duration) - df["admission_wait_begins"]
                                 ) / 60.0
         df["treatment_time"] = df["admission_complete"] - df["admission_begins"]
         self.patient_df = df
@@ -552,8 +558,7 @@ class Trial:
             )),
             los_12hr=("q_time2_hrs", lambda x: (
                         x[  (
-                            (run_summary.loc[x.index, "admission_begins"] > g.warm_up_period) |
-                            (run_summary.loc[x.index, "renege"] > g.warm_up_period)
+                            (run_summary.loc[x.index, "admission_wait_begins"] > g.warm_up_period)
                             ) &
                             (run_summary.loc[x.index, "pathway"] == "ED") &
                             x.notna()
@@ -561,8 +566,7 @@ class Trial:
             )),
             los_24hr=("q_time2_hrs", lambda x: (
                         x[  (
-                            (run_summary.loc[x.index, "admission_begins"] > g.warm_up_period) |
-                            (run_summary.loc[x.index, "renege"] > g.warm_up_period)
+                            (run_summary.loc[x.index, "admission_wait_begins"] > g.warm_up_period)
                             ) &
                             (run_summary.loc[x.index, "pathway"] == "ED") &
                             x.notna()
@@ -570,8 +574,7 @@ class Trial:
             )),
             los_48hr=("q_time2_hrs", lambda x: (
                         x[  (
-                            (run_summary.loc[x.index, "admission_begins"] > g.warm_up_period) |
-                            (run_summary.loc[x.index, "renege"] > g.warm_up_period)
+                            (run_summary.loc[x.index, "admission_wait_begins"] > g.warm_up_period)
                             ) &
                             (run_summary.loc[x.index, "pathway"] == "ED") &
                             x.notna()
@@ -579,8 +582,7 @@ class Trial:
             )),
             los_72hr=("q_time2_hrs", lambda x: (
                         x[  (
-                            (run_summary.loc[x.index, "admission_begins"] > g.warm_up_period) |
-                            (run_summary.loc[x.index, "renege"] > g.warm_up_period)
+                            (run_summary.loc[x.index, "admission_wait_begins"] > g.warm_up_period)
                             ) &
                             (run_summary.loc[x.index, "pathway"] == "ED") &
                             x.notna()
@@ -629,13 +631,13 @@ class Trial:
     
 
 #For testing
-#my_trial = Trial()
-#print(f"Running {g.number_of_runs} simulations......")
-#all_event_logs, patient_df, run_summary_df, trial_summary_df =  my_trial.run_trial()
+# my_trial = Trial()
+# print(f"Running {g.number_of_runs} simulations......")
+# all_event_logs, patient_df, run_summary_df, trial_summary_df =  my_trial.run_trial()
 # # # # # #display(my_trial.all_event_logs.head(1000))
 # display(my_trial.patient_df.tail(1000))
 # # # # # #display(my_trial.patient_df_nowarmup.head(1000))
-#display(my_trial.trial_summary_df)
+# display(my_trial.trial_summary_df)
 
 # # # # # test for no admission complete and no renege without depart timestamps
 # # # display(patient_df[(~patient_df['admission_complete'].isna()) & (patient_df['depart'].isna())])
