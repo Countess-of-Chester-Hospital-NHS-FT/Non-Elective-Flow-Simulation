@@ -180,3 +180,29 @@ fig.update_layout(
 
 fig.show()
 ```
+
+## Do the same comparison for range of NCTR reductions
+
+```{python}
+# calculate adjusted los and summary table
+df1=df
+nctr_change=[1, 0.75, 0.5, 0.25, 0]
+nctr_change_label=['-100%', '-75%', '-50%', '-25%', 'No change']
+
+lists_for_summary=[]
+
+for i in range(len(nctr_change)):
+    df1[f'nctr_adjusted {nctr_change_label[i]}']=df1['nctr_total_days']*nctr_change[i]
+    df1[f'adjusted_los {nctr_change_label[i]}']=df1['LoSHrs']-(df1[f'nctr_adjusted {nctr_change_label[i]}'] * 24.0)
+    df1=df1.drop([f'nctr_adjusted {nctr_change_label[i]}'], axis=1)
+    summary_list=distribution_functions.samples_to_summary_list((df1[f'adjusted_los {nctr_change_label[i]}'].tolist()))
+    lists_for_summary.append(summary_list)
+
+
+summary=distribution_functions.summary_lists_to_table(lists_for_summary)
+summary_cols=nctr_change_label
+summary_cols.insert(0, "Metric")
+summary.columns=summary_cols
+display(summary)
+
+```
