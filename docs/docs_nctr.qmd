@@ -1,0 +1,182 @@
+---
+title: "Non-Elective Flow Model Documentation"
+execute:
+  echo: false
+  warning: false
+  message: false
+format:
+    html:
+        toc: true
+        embed-resources: true
+---
+
+```{python}
+#| label: library-imports
+import pandas as pd
+import numpy as np
+import pyodbc
+import distribution_functions
+from sim_tools.distributions import (Lognormal)
+import plotly.graph_objects as go
+import seaborn as sns
+import matplotlib.pyplot as plt
+from scipy.stats import gaussian_kde
+```
+
+```{python}
+#| label: data-imports
+dsn = "coch_p2" 
+
+read_connection = pyodbc.connect(f'DSN={dsn}', autocommit=True)
+
+sql_query = """
+select
+	ENCNTR_ID
+	,MinWardStart
+	,MaxWardEnd
+	,LoSHrs
+	,nctr_total_days
+from InformationSandpitDB.Reports.pbi_FlowSimulation_NCTR
+where MaxWardEnd between '20240401' and '20250401'
+"""
+df = pd.read_sql_query(sql_query, read_connection)
+read_connection.close()
+```
+
+```{python}
+#| label: get adjusted los
+
+# replace NaNs with 0s
+df['nctr_total_days']=df['nctr_total_days'].fillna(0)
+df['adjusted_los']=df['LoSHrs']-(df['nctr_total_days'] * 24.0)
+df['adjusted_los']=np.where(df['adjusted_los']<0, 0, df['adjusted_los'])
+```
+
+## Exploratory data analysis of how reducing NCTR impacts inpatient LoS Distributions
+
+## Summary metric table
+```{python}
+actual_los=distribution_functions.samples_to_summary_list((df['LoSHrs'].tolist()))
+adjusted_los=distribution_functions.samples_to_summary_list((df['adjusted_los'].tolist()))
+
+summary=distribution_functions.summary_lists_to_table([actual_los,adjusted_los])
+summary = summary.rename(columns={'LoS Dist -1': 'Actual LoS',
+                                    'LoS Dist 0': 'Adjusted LoS (0 NCTR)'})
+display(summary)
+```
+
+## Plots
+
+This shows that getting rid of NCTR does predominantly affect the tail of the distribution.
+```{python}
+# histogram comparison
+fig = go.Figure()
+
+# First distribution (original LoS)
+fig.add_trace(go.Histogram(
+    x=df['LoSHrs'],
+    name='Dist LoS',
+    opacity=0.6,
+    histnorm=None  # or 'probability density' if you want normalization
+))
+
+# Second distribution (adjusted LoS)
+fig.add_trace(go.Histogram(
+    x=df['adjusted_los'],
+    name='Dist LoS (0 NCTR)',
+    opacity=0.4,
+    histnorm=None
+))
+
+# Bin settings
+fig.update_traces(xbins=dict(start=0, end=2000, size=5))
+
+# Overlay mode
+fig.update_layout(
+    barmode='overlay',  # 🔍 This is the key line for overlaid histograms
+    xaxis=dict(range=[0, 2000]),
+    template='plotly_white',
+    title='Overlayed Histogram of Length of Stay Distributions',
+    xaxis_title='Length of Stay',
+    yaxis_title='Count'
+)
+
+fig.show()
+
+```
+
+
+```{python}
+# plotly KDE workaround
+
+# KDE for original
+kde1 = gaussian_kde(df['LoSHrs'].dropna())
+x_vals = np.linspace(0, 2000, 1000)
+y_vals1 = kde1(x_vals)
+
+# KDE for adjusted
+kde2 = gaussian_kde(df['adjusted_los'].dropna())
+y_vals2 = kde2(x_vals)
+
+# Plot
+fig = go.Figure()
+
+fig.add_trace(go.Scatter(
+    x=x_vals, y=y_vals1,
+    mode='lines',
+    name='Dist LoS',
+    line=dict(width=2)
+))
+
+fig.add_trace(go.Scatter(
+    x=x_vals, y=y_vals2,
+    mode='lines',
+    name='Dist LoS (0 NCTR)',
+    line=dict(width=2),
+    opacity=0.6
+))
+
+fig.update_layout(
+    title='KDE Plot of Length of Stay Distributions',
+    xaxis_title='Length of Stay',
+    yaxis_title='Density',
+    template='plotly_white',
+    xaxis=dict(range=[0, 2000])
+)
+
+fig.show()
+```
+
+```{python}
+# plotly violins
+
+fig = go.Figure()
+
+# First distribution
+fig.add_trace(go.Violin(
+    y=df['LoSHrs'],
+    name='Dist LoS',
+    box_visible=True,
+    meanline_visible=True,
+    line_color='blue'
+))
+
+# Second distribution
+fig.add_trace(go.Violin(
+    y=df['adjusted_los'],
+    name='Dist LoS (0 NCTR)',
+    box_visible=True,
+    meanline_visible=True,
+    line_color='orange',
+    opacity=0.6
+))
+
+fig.update_layout(
+    title='Violin Plot of Length of Stay Distributions',
+    yaxis_title='Length of Stay',
+    template='plotly_white',
+    yaxis=dict(range=[0, 2000])
+)
+
+fig.show()
+```
