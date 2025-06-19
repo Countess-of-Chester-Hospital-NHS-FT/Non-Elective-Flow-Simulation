@@ -21,6 +21,7 @@ import plotly.graph_objects as go
 import seaborn as sns
 import matplotlib.pyplot as plt
 from scipy.stats import gaussian_kde
+from plotly.subplots import make_subplots
 ```
 
 ```{python}
@@ -150,35 +151,35 @@ fig.show()
 ```{python}
 # plotly violins
 
-fig = go.Figure()
+# fig = go.Figure()
 
-# First distribution
-fig.add_trace(go.Violin(
-    y=df['LoSHrs'],
-    name='Dist LoS',
-    box_visible=True,
-    meanline_visible=True,
-    line_color='blue'
-))
+# # First distribution
+# fig.add_trace(go.Violin(
+#     y=df['LoSHrs'],
+#     name='Dist LoS',
+#     box_visible=True,
+#     meanline_visible=True,
+#     line_color='blue'
+# ))
 
-# Second distribution
-fig.add_trace(go.Violin(
-    y=df['adjusted_los'],
-    name='Dist LoS (0 NCTR)',
-    box_visible=True,
-    meanline_visible=True,
-    line_color='orange',
-    opacity=0.6
-))
+# # Second distribution
+# fig.add_trace(go.Violin(
+#     y=df['adjusted_los'],
+#     name='Dist LoS (0 NCTR)',
+#     box_visible=True,
+#     meanline_visible=True,
+#     line_color='orange',
+#     opacity=0.6
+# ))
 
-fig.update_layout(
-    title='Violin Plot of Length of Stay Distributions',
-    yaxis_title='Length of Stay',
-    template='plotly_white',
-    yaxis=dict(range=[0, 2000])
-)
+# fig.update_layout(
+#     title='Violin Plot of Length of Stay Distributions',
+#     yaxis_title='Length of Stay',
+#     template='plotly_white',
+#     yaxis=dict(range=[0, 2000])
+# )
 
-fig.show()
+# fig.show()
 ```
 
 ## Do the same comparison for range of NCTR reductions
@@ -206,6 +207,47 @@ summary.columns=summary_cols
 display(summary)
 
 ```
+
+## Histograms for range of NCTR reductions
+
+```{python}
+# show as density plots
+
+# Plot
+fig = go.Figure()
+
+for i in range(len(nctr_change_label)):
+
+
+    fig.add_trace(go.Histogram(
+    x=df1[f'adjusted_los {nctr_change_label[i]}'],
+    name=f'adjusted_los {nctr_change_label[i]}',
+    opacity=0.6,
+    histnorm=None  # or 'probability density' if you want normalization
+    ))
+
+    # Bin settings
+fig.update_traces(xbins=dict(start=0, end=2000, size=24))
+
+# Overlay mode
+fig.update_layout(
+    #barmode='overlay',  # 🔍 This is the key line for overlaid histograms
+    xaxis=dict(range=[0, 2000]),
+    template='plotly_white',
+    title='Overlayed Histogram of Length of Stay Distributions',
+    xaxis_title='Length of Stay',
+    yaxis_title='Count'
+)
+
+
+fig.show()
+```
+
+## Real vs modelled distribution (histogram) - no NCTR change
+
+
+## Real vs modelled distribution (histogram) - 100% change in NCTR
+
 
 ## Density plots for range of NCTR reductions
 ```{python}
@@ -238,4 +280,42 @@ fig.update_layout(
 )
 
 fig.show()
+```
+
+## Comparison of NCTR reduction with modelled range of distributions
+
+This does not look like a good fit to any of the series, prob density peak seems much lower.
+Not sure if this is real or due to how I've calculated it - am I using consistent
+methodology between modelled and data distributions?
+
+```{python}
+mode=16
+traces=20
+mean_list, std_list = distribution_functions.make_lognormal_lists(mode, traces)
+
+fig, df_modelled=distribution_functions.visualise_lognormal(mean_list, std_list)
+
+for i in range(traces):
+    trace=fig.data[i]
+    trace.name=f'Dist{i}'
+
+fig.update_layout(
+    template='plotly_white',
+    showlegend=True,
+    title_text='20 Probability Density functions with increasing tail thickness'
+)
+fig.show()
+
+x_vals = np.linspace(0, 800, 500)
+
+kde = gaussian_kde(df1[f'LoSHrs'].dropna())
+y_vals = kde(x_vals)
+
+fig.add_trace(go.Scatter(
+        x=x_vals, y=y_vals,
+        mode='lines',
+        name=f'LoSHrs',
+        line=dict(width=3, color='black')
+    ))
+#display(df)
 ```
