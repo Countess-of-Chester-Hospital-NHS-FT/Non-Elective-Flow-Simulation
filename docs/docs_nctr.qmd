@@ -200,9 +200,42 @@ for i in range(len(nctr_change)):
 
 
 summary=distribution_functions.summary_lists_to_table(lists_for_summary)
-summary_cols=nctr_change_label
+summary_cols=nctr_change_label.copy()
 summary_cols.insert(0, "Metric")
 summary.columns=summary_cols
 display(summary)
 
+```
+
+## Density plots for range of NCTR reductions
+```{python}
+# show as density plots
+
+# Plot
+fig = go.Figure()
+x_vals = np.linspace(0, 2000, 1000)
+
+for i in range(len(nctr_change_label)):
+
+    kde = gaussian_kde(df1[f'adjusted_los {nctr_change_label[i]}'].dropna())
+    y_vals = kde(x_vals)
+
+
+    fig.add_trace(go.Scatter(
+        x=x_vals, y=y_vals,
+        mode='lines',
+        name=f'adjusted_los {nctr_change_label[i]}',
+        line=dict(width=2)
+    ))
+
+
+fig.update_layout(
+    title='KDE Plot of Length of Stay Distributions',
+    xaxis_title='Length of Stay',
+    yaxis_title='Density',
+    template='plotly_white',
+    xaxis=dict(range=[0, 2000])
+)
+
+fig.show()
 ```
