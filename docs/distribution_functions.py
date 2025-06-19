@@ -264,6 +264,62 @@ def visualise_normal_hist_list(mean_list, std_list, samples, random_seed):
 
     return fig_list, list_of_summary_lists
 
+def compare_real_model_diffplot(series, series_name, mean_list, std_list, random_seed):
+    if isinstance(mean_list, (int, float)):
+        mean_list = [mean_list]
+    if isinstance(std_list, (int, float)):
+        std_list = [std_list]
+
+    samples = len(series)
+    fig_list = []
+    list_of_summary_lists = []
+
+    real_summary_list = samples_to_summary_list(series)
+    list_of_summary_lists.append(real_summary_list)
+
+    # Define common histogram bins
+    bins = np.arange(0, 2000 + 24, 24)  # bin size = 24
+
+    # Compute real histogram counts
+    real_counts, _ = np.histogram(series, bins=bins)
+
+    for i in range(len(mean_list)):
+        dist = Lognormal(mean_list[i], std_list[i], random_seed=random_seed)
+        sample_list = [dist.sample() for _ in range(samples)]
+
+        dist_summary_list = samples_to_summary_list(sample_list)
+        list_of_summary_lists.append(dist_summary_list)
+
+        # Compute model histogram counts
+        model_counts, _ = np.histogram(sample_list, bins=bins)
+
+        # Compute difference
+        diff = real_counts - model_counts
+
+        # X-axis: bin centers
+        bin_centers = (bins[:-1] + bins[1:]) / 2
+
+        # Plot difference
+        fig = go.Figure()
+        fig.add_trace(go.Bar(
+            x=bin_centers,
+            y=diff,
+            name='Real - Modelled',
+            marker_color='crimson'
+        ))
+
+        fig.update_layout(
+            title=f'Difference Plot: {series_name} - Modelled Dist {i}',
+            xaxis_title='Length of Stay',
+            yaxis_title='Difference in Frequency',
+            template='plotly_white',
+            xaxis=dict(range=[0, 2000])
+        )
+
+        fig_list.append(fig)
+
+    return fig_list, list_of_summary_lists
+
 
 
 ### Function testing ground
