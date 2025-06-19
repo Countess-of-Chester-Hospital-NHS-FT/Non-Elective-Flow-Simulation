@@ -138,17 +138,17 @@ def visualise_lognormal_hist_list(mean_list, std_list, samples, random_seed):
 
 
 ### Compare real distribution with a list of theoretical distributions
-def hist_compare_real_model(filepath, mean_list, std_list, random_seed):
+def hist_compare_real_model(series, series_name, mean_list, std_list, random_seed):
     if isinstance(mean_list, (int, float)):
         mean_list = [mean_list]
     if isinstance(std_list, (int, float)):
         std_list = [std_list]
-    csv = pd.read_csv(filepath)
-    samples = csv.shape[0] # counts the number of rows in real data
+    #csv = pd.read_csv(filepath)
+    samples = len(series) # counts the number of rows in real data
     fig = go.Figure()
     fig_list=[]
     list_of_summary_lists=[]
-    real_summary_list=samples_to_summary_list(csv['LoSHrs'])
+    real_summary_list=samples_to_summary_list(series)
     list_of_summary_lists.append(real_summary_list)
     for i in range(len(mean_list)):
         #print(f'Distribution {i}: Mean={mean_list[i]}, STD={std_list[i]}') 
@@ -163,8 +163,8 @@ def hist_compare_real_model(filepath, mean_list, std_list, random_seed):
 
         fig = go.Figure()
         fig.add_trace(go.Histogram(
-            x=csv['LoSHrs'],
-            name='Real'
+            x=series,
+            name=series_name
             #opacity=0.3
         ))
         #fig.update_traces(xbins=dict(start=0, end=2000, size=5))
@@ -175,7 +175,7 @@ def hist_compare_real_model(filepath, mean_list, std_list, random_seed):
         ))
         fig.update_traces(xbins=dict(start=0, end=2000, size=24))
         fig.update_xaxes(range=[0, 2000])
-        fig.update_layout(title = f'Real vs Modelled Dist {i}',
+        fig.update_layout(title = f'{series_name} vs Modelled Dist {i}',
                           template='plotly_white')
         #fig.show()
         fig_list.append(fig)
