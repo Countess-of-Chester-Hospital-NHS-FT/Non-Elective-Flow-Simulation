@@ -1,5 +1,5 @@
 ---
-title: "Non-Elective Flow Model Documentation"
+title: "Evidence based target for NCTR reduction"
 execute:
   echo: false
   warning: false
@@ -31,16 +31,13 @@ import report_functions
 ```
 
 
-
 ```{python}
 # get los values
 beds=456
 demand=53
 ```
 
-
-
-## Target Inpatient Length of Stay
+## Targets for Inpatient Length of Stay
 
 ```{python}
 df, fig, value_vars = report_functions.vary_los(prop_sdec=0,
@@ -67,13 +64,12 @@ fig.data = tuple(
     if trace.name not in names_to_remove
 )
 
-fig.show()
+#fig.show()
 #df
 ```
 
-For a hospital with 456 beds and 53 people needing admission daily mean length of stay needs to be at least below 190 hrs for 0 12hr breaches
+For a hospital with a non-elective (NEL) bedbase of **`{python} beds`** and daily NEL admission demand of**`{python} demand`**, the table below shows the target inpatient length of stay (LoS) needed to avoid any 12-hour LoS breaches. The target metrics in this table can be used as targets for inpatient length of stay performance monitoring. Note that inpatient length of stay has a skewed distribution, so it can be useful to monitor percentiles in addition to the mean.
 
-## Comparing actual length of stay and target length of stay
 ```{python}
 # get los values
 mode=16
@@ -108,22 +104,44 @@ read_connection.close()
 df['nctr_total_days']=df['nctr_total_days'].fillna(0)
 df['adjusted_los']=df['LoSHrs']-(df['nctr_total_days'] * 24.0)
 df['adjusted_los']=np.where(df['adjusted_los']<0, 0, df['adjusted_los'])
+
+# add range of NCTR columns
+df1=df
+nctr_change=[1, 0.9, 0.8, 0.75, 0.5, 0.25, 0]
+nctr_change_label=['-100%','-90%', '-80%', '-75%', '-50%', '-25%', 'No change']
+
+lists_for_summary=[]
+
+for i in range(len(nctr_change)):
+    df1[f'nctr_adjusted {nctr_change_label[i]}']=df1['nctr_total_days']*nctr_change[i]
+    df1[f'adjusted_los {nctr_change_label[i]}']=df1['LoSHrs']-(df1[f'nctr_adjusted {nctr_change_label[i]}'] * 24.0)
+    df1=df1.drop([f'nctr_adjusted {nctr_change_label[i]}'], axis=1)
+    summary_list=distribution_functions.samples_to_summary_list((df1[f'adjusted_los {nctr_change_label[i]}'].tolist()))
+    lists_for_summary.append(summary_list)
+
+
+summary_nctr=distribution_functions.summary_lists_to_table(lists_for_summary)
+summary_cols=nctr_change_label.copy()
+summary_cols.insert(0, "Metric")
+summary_nctr.columns=summary_cols
+#display(summary_nctr)
 ```
 
 ```{python}
 fig_theory, df_theory=distribution_functions.visualise_lognormal(mean_list, std_list)
 
 target_mean=df_theory.loc[max_los_index, 'Mean']
+target_p25=df_theory.loc[max_los_index, 'P25']
 target_median=df_theory.loc[max_los_index, 'Median']
-target_list=[target_mean, '', '','', target_median, '', '']
+target_p75=df_theory.loc[max_los_index, 'P75']
+target_p95=df_theory.loc[max_los_index, 'P95']
+target_list=[target_mean, '', '',target_p25, target_median, target_p75, target_p95]
 ```
 
 
 ```{python}
-# Histogram comparing max los(target) with real los (current)
+# Table comparing max los(target) with real los (current)
 fig_list, list_of_summary_lists = distribution_functions.hist_compare_real_model(df['LoSHrs'], "Current LoS Hrs", mean_list, std_list, random_seed=5)
-
-fig_list[max_los_index]
 
 metrics_list=['mean','25 perc','median','75 perc','95 perc']
 
@@ -137,22 +155,89 @@ display(summary_table)
 ```
 
 
-## NCTR
+```{python}
+# Histogram
+compare_fig = fig_list[max_los_index]
 
-This reduction in length of stay corresponds to an approximately 100% reduction in NCTR
-lengths of stay.
+compare_fig.data[0].opacity = 0.5
+compare_fig.data[1].opacity = 0.5
+compare_fig.data[1].name = 'Target'
+
+
+compare_fig.update_layout(
+    barmode='overlay',  # 🔍 This is the key line for overlaid histograms
+    xaxis=dict(range=[0, 2000]),
+    template='plotly_white',
+    title='Current LoS vs Target LoS',
+    xaxis_title='Inpatient Length of Stay (Hrs)',
+    yaxis_title='Count'
+)
+
+compare_fig.show()
+```
+
+
+## NCTR
+Acheiving the target inpatient length of stay through NCTR reduction alone would require an approximately 50% reduction in NCTR lengths of stay (based on our real NCTR data for FY24/25). The real system is much more complex than the model so the real reduction in NCTR would need to be **greater** than 50% to acheive the same result.
+
+Here is a table of our current NCTR metrics and what the targets for the metrics would be given a 50% reduction. These can be used as targets for NCTR performance monitoring.
 
 ```{python}
 # Corresponds to approx 100% reduction in NCTR length of stay
-# Table comparing actual 100% reduction in NCTR and target/ current
 adjusted_los=distribution_functions.samples_to_summary_list((df['adjusted_los'].tolist()))
 
-compare_list=[list_of_summary_lists[0], target_list, adjusted_los]
+compare_list=[list_of_summary_lists[0], target_list]
 summary_table=distribution_functions.summary_lists_to_table(compare_list)
 summary_table=summary_table.rename(columns={'LoS Dist -1':'Real LoS'})
 summary_table=summary_table.rename(columns={'LoS Dist 0':'Target LoS'})
-summary_table=summary_table.rename(columns={'LoS Dist 1':'NCTR -100%'})
+summary_table['NCTR -50%'] = summary_nctr['-50%']
 summary_table=summary_table[summary_table['Metric'].isin(metrics_list)]
 summary_table.set_index('Metric', inplace=True)
+#display(summary_table)
+```
+
+
+```{python}
+# which nctr is most similar to the target
+metrics_list=['25 perc','median','75 perc','95 perc']
+summary_nctr=summary_nctr[summary_nctr['Metric'].isin(metrics_list)]
+summary_nctr.set_index('Metric', inplace=True)
+#display(summary_nctr)
+filtered = summary_table['Target LoS'].drop('mean')
+#display(filtered)
+
+# Step 1: Subtract the Target LoS series from each column
+diff = summary_nctr.subtract(summary_table['Target LoS'], axis=0)
+
+# Step 2: Take the absolute value
+abs_diff = diff.abs()
+
+# Step 3: Sum the absolute differences for each column
+result = abs_diff.sum()
+#display(result)
+```
+
+```{python}
+# boxplot
+
+
+```
+
+## Methods
+## Details on how the target inpatient length of stay was calculated
+
+```{python}
+fig.show()
+```
+
+The model was run lots of times. Demand and number of beds was kept constant and length of stay was increased incrementally and the model run again after each increase and the number of 12hr breaches were counted. The target length of stay is just below where 12hr breaches start to occur. It is the maximum inpatient length of stay the system can tolerate before breaches occur in ED. Note that the real system is much more complex than the model system and we can therefore assume length of stay must be decreased even further in the real system.
+
+## Calculating NCTR reduction
+
+The reduction in NCTR required to meet the target was calculated by calculating length of stay for a range of NCTR reductions and calculating which of the NCTR reductions produced lengths of stay closest to the target.
+
+```{python}
 display(summary_table)
 ```
+
+Note on how this has been calculated: if an individual patient has a NCTR time of 100 hrs, with a 50% reduction their NCTR time would be 50hrs.

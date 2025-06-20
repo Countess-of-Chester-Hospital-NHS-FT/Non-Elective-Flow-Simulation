@@ -47,6 +47,30 @@ def make_lognormal_trace(mean, std, x_min, x_max):
     pdf = lognorm.pdf(x, s=sigma, scale=np.exp(mu))
     return(pdf, sigma, median, mode)
 
+def make_lognormal_trace2(mean, std, x_min, x_max):
+    # Convert to shape (s), location (loc), and scale parameters
+    phi = np.sqrt(std**2 + mean**2)
+    sigma = np.sqrt(np.log((phi**2) / (mean**2)))
+    mu = np.log(mean**2 / phi)
+
+    # Distribution
+    dist = lognorm(s=sigma, scale=np.exp(mu))
+
+    # Main stats
+    median = dist.median()
+    mode = np.exp(mu - sigma**2)
+
+    # Percentiles
+    p25 = dist.ppf(0.25)
+    p75 = dist.ppf(0.75)
+    p95 = dist.ppf(0.95)
+
+    # PDF
+    x = np.linspace(x_min, x_max, 500)
+    pdf = dist.pdf(x)
+
+    return pdf, sigma, median, mode, p25, p75, p95
+
 # visualise single or multiple traces (probability distributions)
 def visualise_lognormal(mean_list, std_list):
     if isinstance(mean_list, int) or isinstance(mean_list, float):
@@ -65,9 +89,12 @@ def visualise_lognormal(mean_list, std_list):
     median_list=[]
     mode_list=[]
     sigma_list=[]
+    p25_list=[]
+    p75_list=[]
+    p95_list=[]
     
     for i in range(len(mean_list)):
-        pdf, sigma, median, mode = make_lognormal_trace(mean_list[i], std_list[i], x_min, x_max)
+        pdf, sigma, median, mode, p25, p75,p95 = make_lognormal_trace2(mean_list[i], std_list[i], x_min, x_max)
         #print(f'Distribution {i}: Mean={mean_list[i]}, STD={std_list[i]}, Median={median:.2f},' 
         #f'Mode={mode:.2f}, Sigma={sigma:.2f}')
         fig.add_trace(go.Scatter(x=x, y=pdf, mode='lines', name=f'Mean {mean_list[i]}, STD {std_list[i]:.1f}'))
@@ -76,6 +103,9 @@ def visualise_lognormal(mean_list, std_list):
         median_list.append(median)
         mode_list.append(mode)
         sigma_list.append(sigma)
+        p25_list.append(p25)
+        p75_list.append(p75)
+        p95_list.append(p95)
 
     df= pd.DataFrame(
         {'Distribution':pd.Series(dist_list),
@@ -83,7 +113,11 @@ def visualise_lognormal(mean_list, std_list):
          'Std':pd.Series(std_list),
          'Median':pd.Series(median_list),
          'Mode':pd.Series(mode_list),
-         'Sigma':pd.Series(sigma_list)}
+         'Sigma':pd.Series(sigma_list),
+         'P25':pd.Series(p25_list),
+         'P75':pd.Series(p75_list),
+         'P95':pd.Series(p95_list),
+         }
     )
 
     fig.update_layout(showlegend=False)
