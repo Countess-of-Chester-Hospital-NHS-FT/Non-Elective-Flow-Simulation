@@ -244,9 +244,58 @@ fig.show()
 ```
 
 ## Real vs modelled distribution (histogram) - no NCTR change
+```{python}
+mode=16
+traces=20
+mean_list, std_list = distribution_functions.make_lognormal_lists(mode, traces)
 
+fig_list, list_of_summary_lists=distribution_functions.hist_compare_real_model(df1['LoSHrs'], "Unadjusted", mean_list, std_list, 5)
+
+fig_list[11]
+```
+
+```{python}
+mode=16
+traces=20
+mean_list, std_list = distribution_functions.make_lognormal_lists(mode, traces)
+
+fig_list, list_of_summary_lists, overall_diffs=distribution_functions.compare_real_model_percentdiff(df1['LoSHrs'], "Unadjusted", mean_list, std_list, 5)
+
+fig_list[11]
+```
+
+```{python}
+# distribution diff loop
+
+mode=16
+traces=20
+mean_list, std_list = distribution_functions.make_lognormal_lists(mode, traces)
+
+list_overall_diffs=[]
+
+for i in range(len(nctr_change_label)):
+
+    fig_list, list_of_summary_lists, overall_diffs=distribution_functions.compare_real_model_diffplot(df1[f'adjusted_los {nctr_change_label[i]}'], "Unadjusted", mean_list, std_list, 8)
+    list_overall_diffs.append(overall_diffs)
+
+#fig_list[11]
+#diffs_df = pd.DataFrame(list(zip(*list_overall_diffs)))
+diffs_df = pd.DataFrame(list(zip(*list_overall_diffs)))
+diffs_df.columns=nctr_change_label
+display(diffs_df.head(100))
+```
 
 ## Real vs modelled distribution (histogram) - 100% change in NCTR
+
+```{python}
+mode=16
+traces=20
+mean_list, std_list = distribution_functions.make_lognormal_lists(mode, traces)
+
+fig_list, list_of_summary_lists=distribution_functions.hist_compare_real_model(df1['adjusted_los -100%'], "-100%", mean_list, std_list, 5)
+
+fig_list[6]
+```
 
 
 ## Density plots for range of NCTR reductions

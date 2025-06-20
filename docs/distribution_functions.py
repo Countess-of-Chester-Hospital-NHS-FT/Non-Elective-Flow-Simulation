@@ -273,14 +273,15 @@ def compare_real_model_diffplot(series, series_name, mean_list, std_list, random
     samples = len(series)
     fig_list = []
     list_of_summary_lists = []
+    overall_diffs = []
 
     real_summary_list = samples_to_summary_list(series)
     list_of_summary_lists.append(real_summary_list)
 
     # Define common histogram bins
     bins = np.arange(0, 2000 + 24, 24)  # bin size = 24
+    bin_centers = (bins[:-1] + bins[1:]) / 2
 
-    # Compute real histogram counts
     real_counts, _ = np.histogram(series, bins=bins)
 
     for i in range(len(mean_list)):
@@ -290,16 +291,12 @@ def compare_real_model_diffplot(series, series_name, mean_list, std_list, random
         dist_summary_list = samples_to_summary_list(sample_list)
         list_of_summary_lists.append(dist_summary_list)
 
-        # Compute model histogram counts
         model_counts, _ = np.histogram(sample_list, bins=bins)
-
-        # Compute difference
         diff = real_counts - model_counts
+        abs_diff_sum = np.sum(np.abs(diff))
+        overall_diffs.append(abs_diff_sum)
 
-        # X-axis: bin centers
-        bin_centers = (bins[:-1] + bins[1:]) / 2
-
-        # Plot difference
+        # Create plot
         fig = go.Figure()
         fig.add_trace(go.Bar(
             x=bin_centers,
@@ -308,17 +305,105 @@ def compare_real_model_diffplot(series, series_name, mean_list, std_list, random
             marker_color='crimson'
         ))
 
+        # Main title and subtitle (via annotations)
         fig.update_layout(
             title=f'Difference Plot: {series_name} - Modelled Dist {i}',
             xaxis_title='Length of Stay',
             yaxis_title='Difference in Frequency',
             template='plotly_white',
-            xaxis=dict(range=[0, 2000])
+            xaxis=dict(range=[0, 2000]),
+            annotations=[
+                dict(
+                    text=f"Sum of absolute differences: {abs_diff_sum:.2f}",
+                    x=0.5,
+                    y=1.05,
+                    xref='paper',
+                    yref='paper',
+                    showarrow=False,
+                    font=dict(size=12, color='gray'),
+                    align='center'
+                )
+            ]
         )
 
         fig_list.append(fig)
 
-    return fig_list, list_of_summary_lists
+    return fig_list, list_of_summary_lists, overall_diffs
+
+def compare_real_model_percentdiff(series, series_name, mean_list, std_list, random_seed):
+    if isinstance(mean_list, (int, float)):
+        mean_list = [mean_list]
+    if isinstance(std_list, (int, float)):
+        std_list = [std_list]
+
+    samples = len(series)
+    fig_list = []
+    list_of_summary_lists = []
+    percent_diff_scores = []  # Stores the MAPD values
+
+    real_summary_list = samples_to_summary_list(series)
+    list_of_summary_lists.append(real_summary_list)
+
+    # Define bins and centers
+    bins = np.arange(0, 2000 + 24, 24)
+    bin_centers = (bins[:-1] + bins[1:]) / 2
+    real_counts, _ = np.histogram(series, bins=bins)
+
+    for i in range(len(mean_list)):
+        dist = Lognormal(mean_list[i], std_list[i], random_seed=random_seed)
+        sample_list = [dist.sample() for _ in range(samples)]
+        dist_summary_list = samples_to_summary_list(sample_list)
+        list_of_summary_lists.append(dist_summary_list)
+
+        model_counts, _ = np.histogram(sample_list, bins=bins)
+
+        # Avoid divide-by-zero: mask where real_counts == 0
+        with np.errstate(divide='ignore', invalid='ignore'):
+            percent_diff = np.where(
+                real_counts == 0,
+                0,
+                100 * (real_counts - model_counts) / real_counts
+            )
+
+        # Replace nan or inf with 0 (optional: or could drop them)
+        percent_diff = np.nan_to_num(percent_diff)
+
+        # Mean absolute percentage difference (MAPD)
+        mapd = np.mean(np.abs(percent_diff))
+        percent_diff_scores.append(mapd)
+
+        # Plot the percent difference
+        fig = go.Figure()
+        fig.add_trace(go.Bar(
+            x=bin_centers,
+            y=percent_diff,
+            name='Percentage Difference',
+            marker_color='mediumseagreen'
+        ))
+
+        fig.update_layout(
+            title=f'Percentage Difference Plot: {series_name} vs Modelled Dist {i}',
+            xaxis_title='Length of Stay',
+            yaxis_title='Percentage Difference (%)',
+            template='plotly_white',
+            xaxis=dict(range=[0, 2000]),
+            annotations=[
+                dict(
+                    text=f"Mean Absolute % Difference: {mapd:.2f}%",
+                    x=0.5,
+                    y=1.05,
+                    xref='paper',
+                    yref='paper',
+                    showarrow=False,
+                    font=dict(size=12, color='gray'),
+                    align='center'
+                )
+            ]
+        )
+
+        fig_list.append(fig)
+
+    return fig_list, list_of_summary_lists, percent_diff_scores
 
 
 
