@@ -139,7 +139,7 @@ def vary_demand(min_demand, max_demand, step, prop_sdec, beds, losi, runs,
                                 #'Daily 24hr LoS Breaches',
                                 #'Daily 48hr LoS Breaches', 
                                 #'Daily 72hr LoS Breaches',
-                                #'Reneged (per day)'
+                                'Reneged (per day)'
                                 ]
     
     #Reshape the DataFrame to long format
