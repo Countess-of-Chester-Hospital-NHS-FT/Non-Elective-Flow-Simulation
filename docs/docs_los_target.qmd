@@ -48,6 +48,13 @@ max_los = report_functions.find_max_los(df, 'Daily 12hr LoS Breaches')
 fig.add_vline(
         x=max_los,
         line_dash='dash',
+        line_color='purple',
+        opacity=0.7
+    )
+
+fig.add_vline(
+        x=206,
+        line_dash='dash',
         line_color='black',
         opacity=0.7
     )
@@ -63,6 +70,8 @@ fig.data = tuple(
     trace for trace in fig.data
     if trace.name not in names_to_remove
 )
+
+fig.data[0].line.dash = 'solid'
 
 #fig.show()
 #df
