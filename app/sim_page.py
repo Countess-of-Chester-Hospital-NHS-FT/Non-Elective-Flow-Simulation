@@ -85,7 +85,7 @@ with st.sidebar:
     
     with st.expander("Advanced Parameters"):
         num_runs_slider = st.slider("Adjust number of runs the model does",
-                                     min_value=10, max_value=20, value=15)
+                                     min_value=5, max_value=20, value=15)
         escalation_slider = st.select_slider("Turn escalation on/off",
                                              options=off_on,
                                              value=off_on[1],
