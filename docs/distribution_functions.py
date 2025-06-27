@@ -181,6 +181,7 @@ def hist_compare_real_model(series, series_name, mean_list, std_list, random_see
     samples = len(series) # counts the number of rows in real data
     fig = go.Figure()
     fig_list=[]
+    box_list=[]
     list_of_summary_lists=[]
     real_summary_list=samples_to_summary_list(series)
     list_of_summary_lists.append(real_summary_list)
@@ -214,7 +215,16 @@ def hist_compare_real_model(series, series_name, mean_list, std_list, random_see
         #fig.show()
         fig_list.append(fig)
 
-    return fig_list, list_of_summary_lists #note: list of summary lists will be longer than fig list because it has real distribtion at the start
+        box = go.Figure()
+        box.add_trace(go.Box(y=series, name='Real', boxpoints=False))
+        box.add_trace(go.Box(y=sample_list, name='Modelled', boxpoints=False))
+        box.update_layout(title = f'{series_name} vs Modelled Dist {i}',
+                          template='plotly_white')
+        
+        box_list.append(box)
+
+
+    return fig_list, list_of_summary_lists, box_list #note: list of summary lists will be longer than fig list because it has real distribtion at the start
 
 
 
