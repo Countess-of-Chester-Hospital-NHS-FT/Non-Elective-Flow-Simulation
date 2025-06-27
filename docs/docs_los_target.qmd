@@ -1,5 +1,5 @@
 ---
-title: "Evidence based target for NCTR reduction"
+title: "Evidence based targets for Inpatient LoS and NCTR reduction"
 execute:
   echo: false
   warning: false
@@ -28,6 +28,14 @@ root_dir = os.path.abspath(os.path.join(os.getcwd(), '..'))
 sys.path.append(root_dir)
 from app.model import g, Trial
 import report_functions
+import plotly.colors
+
+def to_rgba_string(color_name, alpha):
+    """Converts a named color and alpha value to an rgba string."""
+    # Get the 'rgb(r,g,b)' string
+    rgb_string = plotly.colors.convert_colors_to_same_type([color_name])[0][0]
+    # Reformat to 'rgba(r,g,b,a)'
+    return f"rgba{rgb_string[3:-1]}, {alpha})"
 ```
 
 
@@ -99,7 +107,7 @@ max_los_index=mean_list.index(max_los) # finds the value matching max_los
 ```{python}
 # summary of real vs target
 # calculate real
-fig_list, list_of_summary_lists = distribution_functions.hist_compare_real_model(df_sql['LoSHrs'], "Current LoS Hrs", mean_list, std_list, random_seed=5)
+fig_list, list_of_summary_lists, box_list = distribution_functions.hist_compare_real_model(df_sql['LoSHrs'], "Current LoS Hrs", mean_list, std_list, random_seed=5)
 
 #calculate target
 fig_theory, df_theory=distribution_functions.visualise_lognormal(mean_list, std_list)
@@ -132,12 +140,56 @@ compare_fig.data[1].name = 'Target'
 
 
 compare_fig.update_layout(
-    barmode='overlay',  # 🔍 This is the key line for overlaid histograms
+    barmode='overlay',
     xaxis=dict(range=[0, 2000]),
     template='plotly_white',
     title='Current LoS vs Target LoS',
     xaxis_title='Inpatient Length of Stay (Hrs)',
     yaxis_title='Count'
+)
+
+# Prevent auto display
+_ = None
+```
+
+```{python}
+# Box real vs target
+compare_box = box_list[max_los_index]
+
+compare_box.data[1].name = 'Target'
+
+box_trace = compare_box.data[1]
+
+source_y_data = box_trace.y
+
+median_target = np.median(source_y_data)
+q1_target = np.percentile(source_y_data, 25)
+q3_target = np.percentile(source_y_data, 75)
+
+
+compare_box.add_hline(
+    y=median_target, 
+    line_dash="dash", 
+    line_color='rgba(128, 36, 0, 0.6)',
+    layer='below'
+)
+compare_box.add_hline(
+    y=q1_target, 
+    line_dash="dash", 
+    line_color='rgba(128, 36, 0, 0.6)', 
+    layer='below'
+)
+compare_box.add_hline(
+    y=q3_target, 
+    line_dash="dash", 
+    line_color='rgba(128, 36, 0, 0.6)',
+    layer='below'
+)
+
+compare_box.update_layout(
+    title='Current LoS vs Target LoS',
+    yaxis=dict(range=[0, 275]),
+    yaxis_title='Inpatient LoS (Hrs)'
 )
 
 # Prevent auto display
@@ -208,41 +260,59 @@ summary_table1.set_index('Metric', inplace=True)
 #display(summary_table1)
 ```
 
+
 ## Targets for Inpatient Length of Stay
 
-For a hospital with a non-elective (NEL) bedbase of **`{python} beds`** and daily NEL admission demand of**`{python} demand`**, the table below shows the target inpatient length of stay (LoS) needed to avoid any 12-hour LoS breaches. The target metrics in this table can be used as targets for inpatient length of stay performance monitoring. Note that inpatient length of stay has a skewed distribution, so it can be useful to monitor percentiles in addition to the mean.
+With a fixed bedbase and a fixed level of demand, inpatient length of stay must be kept below a target level to ensure beds are always available for the next patients to arrive.
+
+For a hospital with a non-elective (NEL) bedbase of **`{python} beds`** and **`{python} demand`** NEL patients needing admission each day, @tbl-actual-target shows the target inpatient length of stay (LoS) needed to avoid any 12-hour LoS breaches in ED. @fig-actual-target shows the difference between the real and target lengths of stay graphically. @tbl-actual-target metrics can be used as targets for inpatient length of stay performance monitoring. Note that inpatient length of stay has a skewed distribution, so it can be useful to monitor percentiles in addition to the mean.
 
 ```{python}
-display(summary_table0)
+#| label: tbl-actual-target
+#| tbl-cap: "Shows summary metrics for actual LoS and target LoS."
+summary_table0.round(1)
 ```
 
+
 ```{python}
-compare_fig.show()
+#| label: fig-actual-target
+#| fig-cap: "An boxplot of real and target length of stay distributions. The target boxplot has been created by random sampling from the target distribution."
+compare_box.show()
 ```
 
 ## NCTR
 
 Acheiving the target inpatient length of stay through NCTR reduction alone would require an approximately `{python} min_column` reduction in NCTR lengths of stay (based on our real NCTR data for FY24/25). The real system is much more complex than the model so the real reduction in NCTR would need to be **greater** than `{python} min_column` to acheive the same result.
 
-Here is a table of our current NCTR metrics and what the targets for the metrics would be given a `{python} min_column` reduction. These can be used as targets for NCTR performance monitoring.
+## Materials and Methods
+### Dataset
+Real length of stay figures are based on patients discharged during FY24/25.
 
+### Details on how the target inpatient length of stay was calculated
 
-## Methods
-## Details on how the target inpatient length of stay was calculated
+The model was run lots of times. Demand and number of beds was kept constant and length of stay was increased incrementally and the model run again after each increase and the number of 12hr breaches were counted. The target length of stay is just below where 12hr breaches start to occur (see @fig-calculate-target). It is the maximum inpatient length of stay the system can tolerate before breaches occur in ED. Note that the real system is much more complex than the model system and we can therefore assume length of stay must be decreased even further in the real system.
 
 ```{python}
+#| label: fig-calculate-target
+#| fig-cap: "Number of 12hr LoS Breaches which result from altering inpatient length of stay while keeping beds and demand the same. Dotted lines show real and target lengths of stay respectively."
 fig.show()
 ```
 
-The model was run lots of times. Demand and number of beds was kept constant and length of stay was increased incrementally and the model run again after each increase and the number of 12hr breaches were counted. The target length of stay is just below where 12hr breaches start to occur. It is the maximum inpatient length of stay the system can tolerate before breaches occur in ED. Note that the real system is much more complex than the model system and we can therefore assume length of stay must be decreased even further in the real system.
 
-## Calculating NCTR reduction
+### Calculating NCTR reduction
 
-The reduction in NCTR required to meet the target was calculated by calculating length of stay for a range of NCTR reductions and calculating which of the NCTR reductions produced lengths of stay closest to the target.
+The reduction in NCTR required to meet the target was calculated by calculating length of stay for a range of NCTR reductions and calculating which of the NCTR reductions produced lengths of stay closest to the target. Note on how this has been calculated: if an individual patient has a NCTR time of 100 hrs, with a 50% reduction their NCTR time would be 50hrs.
 
 ```{python}
-display(summary_nctr1)
-display(summary_table1)
+#| label: tbl-nctr-range
+#| tbl-cap: "Shows how inpatient LoS changes over a range of NCTR reductions."
+summary_nctr1.round(1)
 ```
 
-Note on how this has been calculated: if an individual patient has a NCTR time of 100 hrs, with a 50% reduction their NCTR time would be 50hrs.
+@tbl-nctr-target-comparison shows how the selected NCTR reduction compares to the modelled target.
+
+```{python}
+#| label: tbl-nctr-target-comparison
+#| tbl-cap: "Shows how similar the modelled target is to the selected NCTR reduction."
+summary_table1.round(1)
+```
