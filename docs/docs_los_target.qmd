@@ -29,13 +29,6 @@ sys.path.append(root_dir)
 from app.model import g, Trial
 import report_functions
 import plotly.colors
-
-def to_rgba_string(color_name, alpha):
-    """Converts a named color and alpha value to an rgba string."""
-    # Get the 'rgb(r,g,b)' string
-    rgb_string = plotly.colors.convert_colors_to_same_type([color_name])[0][0]
-    # Reformat to 'rgba(r,g,b,a)'
-    return f"rgba{rgb_string[3:-1]}, {alpha})"
 ```
 
 
@@ -128,6 +121,7 @@ summary_table0=summary_table0.rename(columns={'LoS Dist -1':'Real LoS'})
 summary_table0=summary_table0.rename(columns={'LoS Dist 0':'Target LoS'})
 summary_table0=summary_table0[summary_table0['Metric'].isin(metrics_list)]
 summary_table0.set_index('Metric', inplace=True)
+summary_table0 = summary_table0.apply(pd.to_numeric, errors='coerce')
 ```
 
 ```{python}
@@ -244,6 +238,10 @@ result = abs_diff.sum()
 #display(result)
 min_column = result.idxmin()
 #display(min_column)
+result=pd.DataFrame(result)
+result=result.rename(columns={0:'Absolute difference vs target'})
+result.index.name = 'NCTR Reduction'
+result = result.apply(pd.to_numeric, errors='coerce')
 ```
 
 ```{python}
@@ -255,8 +253,10 @@ summary_table1=distribution_functions.summary_lists_to_table(compare_list)
 summary_table1=summary_table1.rename(columns={'LoS Dist -1':'Real LoS'})
 summary_table1=summary_table1.rename(columns={'LoS Dist 0':'Target LoS'})
 summary_table1[min_column] = summary_nctr[min_column]
+summary_table1=summary_table1.rename(columns={f'{min_column}':f'NCTR{min_column}'})
 summary_table1=summary_table1[summary_table1['Metric'].isin(metrics_list)]
 summary_table1.set_index('Metric', inplace=True)
+summary_table1 = summary_table1.apply(pd.to_numeric, errors='coerce')
 #display(summary_table1)
 ```
 
@@ -306,10 +306,16 @@ The reduction in NCTR required to meet the target was calculated by calculating 
 ```{python}
 #| label: tbl-nctr-range
 #| tbl-cap: "Shows how inpatient LoS changes over a range of NCTR reductions."
-summary_nctr1.round(1)
+summary_nctr1
 ```
 
-@tbl-nctr-target-comparison shows how the selected NCTR reduction compares to the modelled target.
+@tbl-abs-diff shows how closely each NCTR reduction matches the target inpatient LoS, by summing the absolute differences across quartiles. @tbl-nctr-target-comparison shows the NCTR reduction most similar to the target.
+
+```{python}
+#| label: tbl-abs-diff
+#| tbl-cap: "Absolute differences between target inpatient LoS and different NCTR reductions, to find the NCTR reduction that most closely matches the target."
+result.round(1)
+```
 
 ```{python}
 #| label: tbl-nctr-target-comparison
