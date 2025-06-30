@@ -414,3 +414,11 @@ result.round(1)
 #| tbl-cap: "Shows how similar the modelled target is to the selected NCTR reduction."
 summary_table1.round(1)
 ```
+
+```{python}
+#| label: fig-nctr-target-boxplot
+#| fig-cap: "Shows target NCTR reduction compared to real and target."
+compare_box_nctr = compare_box
+compare_box_nctr.add_trace(go.Box(y=df1[f'adjusted_los {min_column}'], name=f'NCTR{min_column}', boxpoints=False))
+compare_box_nctr.show()
+```
