@@ -29,6 +29,7 @@ sys.path.append(root_dir)
 from app.model import g, Trial
 import report_functions
 import plotly.colors
+import plotly.express as px
 ```
 
 
@@ -191,6 +192,91 @@ _ = None
 ```
 
 ```{python}
+# Timeseries plot of percentiles vs target
+# Define the percentiles we want to calculate
+percentiles_to_calc = [0.25, 0.50, 0.75, 0.95]
+
+# Group by the week start date of 'MaxWardEnd' and aggregate
+# Using named aggregation to create the new columns directly
+weekly_percentiles = df_sql.groupby(pd.Grouper(key='MaxWardEnd', freq='W-MON')).agg(
+    p25_LoSHrs=('LoSHrs', lambda x: x.quantile(0.25)),
+    p50_LoSHrs=('LoSHrs', 'median'), # .quantile(0.5) is the same as 'median'
+    p75_LoSHrs=('LoSHrs', lambda x: x.quantile(0.75)),
+    p95_LoSHrs=('LoSHrs', lambda x: x.quantile(0.95))
+).dropna() # Drop weeks that might not have any data
+weekly_percentiles = weekly_percentiles[weekly_percentiles.index > pd.to_datetime('2024-04-01')]
+# Define the columns we want to smooth
+percentile_cols = ['p25_LoSHrs', 'p50_LoSHrs', 'p75_LoSHrs', 'p95_LoSHrs']
+
+# min_periods=1 ensures we get an average even for the first few weeks
+rolling_avg = weekly_percentiles[percentile_cols].rolling(window=4, min_periods=1).mean()
+
+# Create new column names for the rolling averages
+rolling_avg.columns = [f'{col}_4wk_avg' for col in percentile_cols]
+
+# Join the new rolling average columns back to the original dataframe
+final_df = weekly_percentiles.join(rolling_avg)
+
+fig_time_perc = px.line(
+    weekly_percentiles,
+    x=weekly_percentiles.index,
+    y=['p25_LoSHrs', 'p50_LoSHrs', 'p75_LoSHrs', 'p95_LoSHrs'],
+    markers=True,
+    title="Weekly Inpatient Length of Stay (LoS) Percentiles",
+    labels={
+        "x": "Week Start Date",
+        "value": "Length of Stay (Hours)", # 'value' is the default name for the y-axis
+        "variable": "Percentile" # 'variable' is the default name for the legend
+    },
+    template="plotly_white" # A nice clean theme
+)
+
+# Add P50 Median Target Line
+fig_time_perc.add_hline(
+    y=target_p25,
+    line_dash="dash",
+    line_color="blue",
+    #annotation_text="P25 Target",
+    #annotation_position="top left"
+)
+
+# Add P50 Median Target Line
+fig_time_perc.add_hline(
+    y=target_median,
+    line_dash="dash",
+    line_color="firebrick",
+    annotation_text="Median Target",
+    annotation_position="top left"
+)
+
+# Add P75 Target Line
+fig_time_perc.add_hline(
+    y=target_p75,
+    line_dash="dash",
+    line_color="green",
+    annotation_text="P75 Target",
+    annotation_position="top left"
+)
+
+# Add P95 Target Line
+fig_time_perc.add_hline(
+    y=target_p95,
+    line_dash="dash",
+    line_color="purple",
+    annotation_text="P95 Target",
+    annotation_position="top left"
+)
+# Improve legend names
+fig_time_perc.for_each_trace(lambda t: t.update(name = t.name.replace("_LoSHrs", "")))
+
+fig_time_perc.update_xaxes(range=[weekly_percentiles.index.min(), weekly_percentiles.index.max()])
+
+# Prevent auto display
+_ = None
+
+```
+
+```{python}
 #Make NCTR summary table with range of NCTR reductions
 
 # replace NaNs with 0s
@@ -265,7 +351,7 @@ summary_table1 = summary_table1.apply(pd.to_numeric, errors='coerce')
 
 With a fixed bedbase and a fixed level of demand, inpatient length of stay must be kept below a target level to ensure beds are always available for the next patients to arrive.
 
-For a hospital with a non-elective (NEL) bedbase of **`{python} beds`** and **`{python} demand`** NEL patients needing admission each day, @tbl-actual-target shows the target inpatient length of stay (LoS) needed to avoid any 12-hour LoS breaches in ED. @fig-actual-target shows the difference between the real and target lengths of stay graphically. @tbl-actual-target metrics can be used as targets for inpatient length of stay performance monitoring. Note that inpatient length of stay has a skewed distribution, so it can be useful to monitor percentiles in addition to the mean.
+For a hospital with a non-elective (NEL) bedbase of **`{python} beds`** and **`{python} demand`** NEL patients needing admission each day, @tbl-actual-target shows the target inpatient length of stay (LoS) needed to avoid any 12-hour LoS breaches in ED. @fig-actual-target shows the difference between the real and target lengths of stay as a box plot. @tbl-actual-target metrics can be used as targets for inpatient length of stay performance monitoring. Note that inpatient length of stay has a skewed distribution, so it can be useful to monitor percentiles in addition to the mean. @fig-timeseries-percentiles shows how the targets can be displayed for performance monitoring.
 
 ```{python}
 #| label: tbl-actual-target
@@ -278,6 +364,12 @@ summary_table0.round(1)
 #| label: fig-actual-target
 #| fig-cap: "An boxplot of real and target length of stay distributions. The target boxplot has been created by random sampling from the target distribution."
 compare_box.show()
+```
+
+```{python}
+#| label: fig-timeseries-percentiles
+#| fig-cap: "A timeseries of real LoS data percentiles vs the target percentiles"
+fig_time_perc.show()
 ```
 
 ## NCTR
