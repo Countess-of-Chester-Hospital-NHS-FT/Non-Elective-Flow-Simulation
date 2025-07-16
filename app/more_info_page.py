@@ -9,7 +9,7 @@ st.title("More Information")
 st.markdown("""
 ##### Conceptual model
 
-Long admission delays in ED are primarily driven by waits for an available bed.
+Long admission delays in ED are often driven by waits for an available bed.
 Reduced to its simplest possible components non-elective flow can be modelled
 as below:
 """)
@@ -34,29 +34,36 @@ Although the details of management strategies aimed at reducing admission delays
 differ, they will need to have an effect on one or more of these things to
 be effective.
             
-This tool enables you to try out different scenarios to estimate the effect any
+This tool enables you to try out different scenarios to estimate the maximum effect any
 strategy will have on ED admission delays.
             
 ##### Computer model
 
 The above conceptual model is represented inside the computer as a 'Discrete
 Event Simulation'. The computer generates synthetic patients (just like in a
-video game) and sends them through the system. The simulated patients will wait
+video game) and sends them through the system (you can view this in the animation tab). 
+The simulated patients will wait
 in ED until a bed comes available, then they will stay in that bed for a period
 of time and the timepoints when they move from one place to another are recorded
 , just like in the real system. 
             
 In the real system there is random variation in how frequently patients arrive 
-and how long they stay in a bed and this is mirrored in the simulated system. 
-The simulation runs for 10 * 60 day periods and then shows admission delay metrics
+and how long they stay in a bed and this is mirrored in the real system. Interarrival 
+times and inpatient lengths of stay are randomly selected from a distributions which 
+approxiamte the real distributions.
+The simulation runs for the selected number of 60 day periods, following a 300 day warmup 
+(so the hospital isn't empty at the start of the ditribution).
+It then shows admission delay metrics
 for that period, alongside confidence intervals. The number of runs can be 
-increased by the user from 10 to 200 for greater confidence (but the model will
+increased by the user to obtain smaller confidence intervals (but the model will
 take longer to run).
             
-##### How confident are we in the model results?
+##### Limitations and suggested use
             
-At the moment the model is in the early stages of development and has undergone
-only very limited validation - at the moment use results with extreme caution.
+As described on the homepage, the model system is much simpler than the real
+system and differs in several important ways.
+Therefore this tool is not intended as a forecasting tool, but as a tool for exploring
+strategic scenarios, based on the assumptions codified in the model. 
 
 """
 )
