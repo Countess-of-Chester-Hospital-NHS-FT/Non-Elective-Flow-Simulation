@@ -1,0 +1,370 @@
+---
+title: "Non-Elective Flow Model Documentation"
+execute:
+  echo: false
+  warning: false
+  message: false
+format:
+    html:
+        toc: true
+        embed-resources: true
+---
+
+```{python}
+#| label: library-imports
+import pandas as pd
+import numpy as np
+import pyodbc
+import distribution_functions
+from sim_tools.distributions import (Lognormal)
+import plotly.graph_objects as go
+import seaborn as sns
+import matplotlib.pyplot as plt
+from scipy.stats import gaussian_kde
+from plotly.subplots import make_subplots
+```
+
+```{python}
+#| label: data-imports
+dsn = "coch_p2" 
+
+read_connection = pyodbc.connect(f'DSN={dsn}', autocommit=True)
+
+sql_query = """
+select
+	ENCNTR_ID
+	,MinWardStart
+	,MaxWardEnd
+	,LoSHrs
+	,nctr_total_days
+from InformationSandpitDB.Reports.pbi_FlowSimulation_NCTR
+where MaxWardEnd between '20240401' and '20250401'
+"""
+df = pd.read_sql_query(sql_query, read_connection)
+read_connection.close()
+```
+
+```{python}
+#| label: get adjusted los
+
+# replace NaNs with 0s
+df['nctr_total_days']=df['nctr_total_days'].fillna(0)
+df['adjusted_los']=df['LoSHrs']-(df['nctr_total_days'] * 24.0)
+df['adjusted_los']=np.where(df['adjusted_los']<0, 0, df['adjusted_los'])
+```
+
+## Exploratory data analysis of how reducing NCTR impacts inpatient LoS Distributions
+
+## Summary metric table
+```{python}
+actual_los=distribution_functions.samples_to_summary_list((df['LoSHrs'].tolist()))
+adjusted_los=distribution_functions.samples_to_summary_list((df['adjusted_los'].tolist()))
+
+summary=distribution_functions.summary_lists_to_table([actual_los,adjusted_los])
+summary = summary.rename(columns={'LoS Dist -1': 'Actual LoS',
+                                    'LoS Dist 0': 'Adjusted LoS (0 NCTR)'})
+display(summary)
+```
+
+## Plots
+
+This shows that getting rid of NCTR does predominantly affect the tail of the distribution.
+```{python}
+# histogram comparison
+fig = go.Figure()
+
+# First distribution (original LoS)
+fig.add_trace(go.Histogram(
+    x=df['LoSHrs'],
+    name='Dist LoS',
+    opacity=0.6,
+    histnorm=None  # or 'probability density' if you want normalization
+))
+
+# Second distribution (adjusted LoS)
+fig.add_trace(go.Histogram(
+    x=df['adjusted_los'],
+    name='Dist LoS (0 NCTR)',
+    opacity=0.4,
+    histnorm=None
+))
+
+# Bin settings
+fig.update_traces(xbins=dict(start=0, end=2000, size=5))
+
+# Overlay mode
+fig.update_layout(
+    barmode='overlay',  # 🔍 This is the key line for overlaid histograms
+    xaxis=dict(range=[0, 2000]),
+    template='plotly_white',
+    title='Overlayed Histogram of Length of Stay Distributions',
+    xaxis_title='Length of Stay',
+    yaxis_title='Count'
+)
+
+fig.show()
+
+```
+
+
+```{python}
+# plotly KDE workaround
+
+# KDE for original
+kde1 = gaussian_kde(df['LoSHrs'].dropna())
+x_vals = np.linspace(0, 2000, 1000)
+y_vals1 = kde1(x_vals)
+
+# KDE for adjusted
+kde2 = gaussian_kde(df['adjusted_los'].dropna())
+y_vals2 = kde2(x_vals)
+
+# Plot
+fig = go.Figure()
+
+fig.add_trace(go.Scatter(
+    x=x_vals, y=y_vals1,
+    mode='lines',
+    name='Dist LoS',
+    line=dict(width=2)
+))
+
+fig.add_trace(go.Scatter(
+    x=x_vals, y=y_vals2,
+    mode='lines',
+    name='Dist LoS (0 NCTR)',
+    line=dict(width=2),
+    opacity=0.6
+))
+
+fig.update_layout(
+    title='KDE Plot of Length of Stay Distributions',
+    xaxis_title='Length of Stay',
+    yaxis_title='Density',
+    template='plotly_white',
+    xaxis=dict(range=[0, 2000])
+)
+
+fig.show()
+```
+
+```{python}
+# plotly violins
+
+# fig = go.Figure()
+
+# # First distribution
+# fig.add_trace(go.Violin(
+#     y=df['LoSHrs'],
+#     name='Dist LoS',
+#     box_visible=True,
+#     meanline_visible=True,
+#     line_color='blue'
+# ))
+
+# # Second distribution
+# fig.add_trace(go.Violin(
+#     y=df['adjusted_los'],
+#     name='Dist LoS (0 NCTR)',
+#     box_visible=True,
+#     meanline_visible=True,
+#     line_color='orange',
+#     opacity=0.6
+# ))
+
+# fig.update_layout(
+#     title='Violin Plot of Length of Stay Distributions',
+#     yaxis_title='Length of Stay',
+#     template='plotly_white',
+#     yaxis=dict(range=[0, 2000])
+# )
+
+# fig.show()
+```
+
+## Do the same comparison for range of NCTR reductions
+
+```{python}
+# calculate adjusted los and summary table
+df1=df
+nctr_change=[1, 0.75, 0.5, 0.25, 0]
+nctr_change_label=['-100%', '-75%', '-50%', '-25%', 'No change']
+
+lists_for_summary=[]
+
+for i in range(len(nctr_change)):
+    df1[f'nctr_adjusted {nctr_change_label[i]}']=df1['nctr_total_days']*nctr_change[i]
+    df1[f'adjusted_los {nctr_change_label[i]}']=df1['LoSHrs']-(df1[f'nctr_adjusted {nctr_change_label[i]}'] * 24.0)
+    df1=df1.drop([f'nctr_adjusted {nctr_change_label[i]}'], axis=1)
+    summary_list=distribution_functions.samples_to_summary_list((df1[f'adjusted_los {nctr_change_label[i]}'].tolist()))
+    lists_for_summary.append(summary_list)
+
+
+summary=distribution_functions.summary_lists_to_table(lists_for_summary)
+summary_cols=nctr_change_label.copy()
+summary_cols.insert(0, "Metric")
+summary.columns=summary_cols
+display(summary)
+
+```
+
+## Histograms for range of NCTR reductions
+
+```{python}
+# show as density plots
+
+# Plot
+fig = go.Figure()
+
+for i in range(len(nctr_change_label)):
+
+
+    fig.add_trace(go.Histogram(
+    x=df1[f'adjusted_los {nctr_change_label[i]}'],
+    name=f'adjusted_los {nctr_change_label[i]}',
+    opacity=0.6,
+    histnorm=None  # or 'probability density' if you want normalization
+    ))
+
+    # Bin settings
+fig.update_traces(xbins=dict(start=0, end=2000, size=24))
+
+# Overlay mode
+fig.update_layout(
+    #barmode='overlay',  # 🔍 This is the key line for overlaid histograms
+    xaxis=dict(range=[0, 2000]),
+    template='plotly_white',
+    title='Overlayed Histogram of Length of Stay Distributions',
+    xaxis_title='Length of Stay',
+    yaxis_title='Count'
+)
+
+
+fig.show()
+```
+
+## Real vs modelled distribution (histogram) - no NCTR change
+```{python}
+mode=16
+traces=20
+mean_list, std_list = distribution_functions.make_lognormal_lists(mode, traces)
+
+fig_list, list_of_summary_lists, box_list=distribution_functions.hist_compare_real_model(df1['LoSHrs'], "Unadjusted", mean_list, std_list, 5)
+
+fig_list[11]
+```
+
+```{python}
+mode=16
+traces=20
+mean_list, std_list = distribution_functions.make_lognormal_lists(mode, traces)
+
+fig_list, list_of_summary_lists, overall_diffs=distribution_functions.compare_real_model_percentdiff(df1['LoSHrs'], "Unadjusted", mean_list, std_list, 5)
+
+fig_list[11]
+```
+
+```{python}
+# distribution diff loop
+
+mode=16
+traces=20
+mean_list, std_list = distribution_functions.make_lognormal_lists(mode, traces)
+
+list_overall_diffs=[]
+
+for i in range(len(nctr_change_label)):
+
+    fig_list, list_of_summary_lists, overall_diffs=distribution_functions.compare_real_model_diffplot(df1[f'adjusted_los {nctr_change_label[i]}'], "Unadjusted", mean_list, std_list, 8)
+    list_overall_diffs.append(overall_diffs)
+
+#fig_list[11]
+#diffs_df = pd.DataFrame(list(zip(*list_overall_diffs)))
+diffs_df = pd.DataFrame(list(zip(*list_overall_diffs)))
+diffs_df.columns=nctr_change_label
+display(diffs_df.head(100))
+```
+
+## Real vs modelled distribution (histogram) - 100% change in NCTR
+
+```{python}
+mode=16
+traces=20
+mean_list, std_list = distribution_functions.make_lognormal_lists(mode, traces)
+
+fig_list, list_of_summary_lists, box_list=distribution_functions.hist_compare_real_model(df1['adjusted_los -100%'], "-100%", mean_list, std_list, 5)
+
+fig_list[6]
+```
+
+
+## Density plots for range of NCTR reductions
+```{python}
+# show as density plots
+
+# Plot
+fig = go.Figure()
+x_vals = np.linspace(0, 2000, 1000)
+
+for i in range(len(nctr_change_label)):
+
+    kde = gaussian_kde(df1[f'adjusted_los {nctr_change_label[i]}'].dropna())
+    y_vals = kde(x_vals)
+
+
+    fig.add_trace(go.Scatter(
+        x=x_vals, y=y_vals,
+        mode='lines',
+        name=f'adjusted_los {nctr_change_label[i]}',
+        line=dict(width=2)
+    ))
+
+
+fig.update_layout(
+    title='KDE Plot of Length of Stay Distributions',
+    xaxis_title='Length of Stay',
+    yaxis_title='Density',
+    template='plotly_white',
+    xaxis=dict(range=[0, 2000])
+)
+
+fig.show()
+```
+
+## Comparison of NCTR reduction with modelled range of distributions
+
+This does not look like a good fit to any of the series, prob density peak seems much lower.
+Not sure if this is real or due to how I've calculated it - am I using consistent
+methodology between modelled and data distributions?
+
+```{python}
+mode=16
+traces=20
+mean_list, std_list = distribution_functions.make_lognormal_lists(mode, traces)
+
+fig, df_modelled=distribution_functions.visualise_lognormal(mean_list, std_list)
+
+for i in range(traces):
+    trace=fig.data[i]
+    trace.name=f'Dist{i}'
+
+fig.update_layout(
+    template='plotly_white',
+    showlegend=True,
+    title_text='20 Probability Density functions with increasing tail thickness'
+)
+fig.show()
+
+x_vals = np.linspace(0, 800, 500)
+
+kde = gaussian_kde(df1[f'LoSHrs'].dropna())
+y_vals = kde(x_vals)
+
+fig.add_trace(go.Scatter(
+        x=x_vals, y=y_vals,
+        mode='lines',
+        name=f'LoSHrs',
+        line=dict(width=3, color='black')
+    ))
+#display(df)
+```

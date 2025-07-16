@@ -1,0 +1,424 @@
+---
+title: "Evidence based targets for Inpatient LoS and NCTR reduction"
+execute:
+  echo: false
+  warning: false
+  message: false
+format:
+    html:
+        toc: true
+        embed-resources: true
+---
+
+```{python}
+#| label: library-imports
+import pandas as pd
+import numpy as np
+import pyodbc
+import sys
+import os
+import distribution_functions
+from sim_tools.distributions import (Lognormal)
+import plotly.graph_objects as go
+import seaborn as sns
+import matplotlib.pyplot as plt
+from scipy.stats import gaussian_kde
+from plotly.subplots import make_subplots
+root_dir = os.path.abspath(os.path.join(os.getcwd(), '..'))
+sys.path.append(root_dir)
+from app.model import g, Trial
+import report_functions
+import plotly.colors
+import plotly.express as px
+```
+
+
+```{python}
+# static inputs
+beds=456
+demand=53
+
+# import data
+dsn = "coch_p2" 
+
+read_connection = pyodbc.connect(f'DSN={dsn}', autocommit=True)
+
+sql_query = """
+select
+	ENCNTR_ID
+	,MinWardStart
+	,MaxWardEnd
+	,LoSHrs
+	,nctr_total_days
+from InformationSandpitDB.Reports.pbi_FlowSimulation_NCTR
+where MaxWardEnd between '20240401' and '20250401'
+"""
+df_sql = pd.read_sql_query(sql_query, read_connection)
+read_connection.close()
+```
+
+```{python}
+# Calculating target length of stay distribution and storing the index of the target
+df, fig, value_vars = report_functions.vary_los(prop_sdec=0,
+beds=beds, demand=demand, runs=10, escalation=0, reneging=0, prioritisation=0)
+
+max_los = report_functions.find_max_los(df, 'Daily 12hr LoS Breaches')
+
+fig.add_vline(
+        x=max_los,
+        line_dash='dash',
+        line_color='purple',
+        opacity=0.7
+    )
+
+fig.add_vline(
+        x=206,
+        line_dash='dash',
+        line_color='black',
+        opacity=0.7
+    )
+
+fig.update_layout(
+    title_text=f"Beds: {beds}, Demand: {demand}, Max los_hrs: {round(max_los)}"
+)
+
+
+names_to_remove = {'ED Admissions', 'SDEC Admissions', 'Daily 12hr DTAs'}
+
+fig.data = tuple(
+    trace for trace in fig.data
+    if trace.name not in names_to_remove
+)
+
+fig.data[0].line.dash = 'solid'
+
+# Get index of target los
+mode=16
+mean_list, std_list = distribution_functions.make_lognormal_lists(mode, 20) # makes the list
+max_los_index=mean_list.index(max_los) # finds the value matching max_los
+```
+
+```{python}
+# summary of real vs target
+# calculate real
+fig_list, list_of_summary_lists, box_list = distribution_functions.hist_compare_real_model(df_sql['LoSHrs'], "Current LoS Hrs", mean_list, std_list, random_seed=5)
+
+#calculate target
+fig_theory, df_theory=distribution_functions.visualise_lognormal(mean_list, std_list)
+
+target_mean=df_theory.loc[max_los_index, 'Mean']
+target_p25=df_theory.loc[max_los_index, 'P25']
+target_median=df_theory.loc[max_los_index, 'Median']
+target_p75=df_theory.loc[max_los_index, 'P75']
+target_p95=df_theory.loc[max_los_index, 'P95']
+target_list=[target_mean, '', '',target_p25, target_median, target_p75, target_p95]
+
+#put them together in a table (summary_table0)
+metrics_list=['mean','25 perc','median','75 perc','95 perc']
+
+compare_list=[list_of_summary_lists[0], target_list]
+summary_table0=distribution_functions.summary_lists_to_table(compare_list)
+summary_table0=summary_table0.rename(columns={'LoS Dist -1':'Real LoS'})
+summary_table0=summary_table0.rename(columns={'LoS Dist 0':'Target LoS'})
+summary_table0=summary_table0[summary_table0['Metric'].isin(metrics_list)]
+summary_table0.set_index('Metric', inplace=True)
+summary_table0 = summary_table0.apply(pd.to_numeric, errors='coerce')
+```
+
+```{python}
+# Histogram real vs target
+compare_fig = fig_list[max_los_index]
+
+compare_fig.data[0].opacity = 0.5
+compare_fig.data[1].opacity = 0.5
+compare_fig.data[1].name = 'Target'
+
+
+compare_fig.update_layout(
+    barmode='overlay',
+    xaxis=dict(range=[0, 2000]),
+    template='plotly_white',
+    title='Current LoS vs Target LoS',
+    xaxis_title='Inpatient Length of Stay (Hrs)',
+    yaxis_title='Count'
+)
+
+# Prevent auto display
+_ = None
+```
+
+```{python}
+# Box real vs target
+compare_box = box_list[max_los_index]
+
+compare_box.data[1].name = 'Target'
+
+box_trace = compare_box.data[1]
+
+source_y_data = box_trace.y
+
+median_target = np.median(source_y_data)
+q1_target = np.percentile(source_y_data, 25)
+q3_target = np.percentile(source_y_data, 75)
+
+
+compare_box.add_hline(
+    y=median_target, 
+    line_dash="dash", 
+    line_color='rgba(128, 36, 0, 0.6)',
+    layer='below'
+)
+compare_box.add_hline(
+    y=q1_target, 
+    line_dash="dash", 
+    line_color='rgba(128, 36, 0, 0.6)', 
+    layer='below'
+)
+compare_box.add_hline(
+    y=q3_target, 
+    line_dash="dash", 
+    line_color='rgba(128, 36, 0, 0.6)',
+    layer='below'
+)
+
+compare_box.update_layout(
+    title='Current LoS vs Target LoS',
+    yaxis=dict(range=[0, 275]),
+    yaxis_title='Inpatient LoS (Hrs)'
+)
+
+# Prevent auto display
+_ = None
+```
+
+```{python}
+# Timeseries plot of percentiles vs target
+# Define the percentiles we want to calculate
+percentiles_to_calc = [0.25, 0.50, 0.75, 0.95]
+
+# Group by the week start date of 'MaxWardEnd' and aggregate
+# Using named aggregation to create the new columns directly
+weekly_percentiles = df_sql.groupby(pd.Grouper(key='MaxWardEnd', freq='W-MON')).agg(
+    p25_LoSHrs=('LoSHrs', lambda x: x.quantile(0.25)),
+    p50_LoSHrs=('LoSHrs', 'median'), # .quantile(0.5) is the same as 'median'
+    p75_LoSHrs=('LoSHrs', lambda x: x.quantile(0.75)),
+    p95_LoSHrs=('LoSHrs', lambda x: x.quantile(0.95))
+).dropna() # Drop weeks that might not have any data
+weekly_percentiles = weekly_percentiles[weekly_percentiles.index > pd.to_datetime('2024-04-01')]
+# Define the columns we want to smooth
+percentile_cols = ['p25_LoSHrs', 'p50_LoSHrs', 'p75_LoSHrs', 'p95_LoSHrs']
+
+# min_periods=1 ensures we get an average even for the first few weeks
+rolling_avg = weekly_percentiles[percentile_cols].rolling(window=4, min_periods=1).mean()
+
+# Create new column names for the rolling averages
+rolling_avg.columns = [f'{col}_4wk_avg' for col in percentile_cols]
+
+# Join the new rolling average columns back to the original dataframe
+final_df = weekly_percentiles.join(rolling_avg)
+
+fig_time_perc = px.line(
+    weekly_percentiles,
+    x=weekly_percentiles.index,
+    y=['p25_LoSHrs', 'p50_LoSHrs', 'p75_LoSHrs', 'p95_LoSHrs'],
+    markers=True,
+    title="Weekly Inpatient Length of Stay (LoS) Percentiles",
+    labels={
+        "x": "Week Start Date",
+        "value": "Length of Stay (Hours)", # 'value' is the default name for the y-axis
+        "variable": "Percentile" # 'variable' is the default name for the legend
+    },
+    template="plotly_white" # A nice clean theme
+)
+
+# Add P50 Median Target Line
+fig_time_perc.add_hline(
+    y=target_p25,
+    line_dash="dash",
+    line_color="blue",
+    #annotation_text="P25 Target",
+    #annotation_position="top left"
+)
+
+# Add P50 Median Target Line
+fig_time_perc.add_hline(
+    y=target_median,
+    line_dash="dash",
+    line_color="firebrick",
+    annotation_text="Median Target",
+    annotation_position="top left"
+)
+
+# Add P75 Target Line
+fig_time_perc.add_hline(
+    y=target_p75,
+    line_dash="dash",
+    line_color="green",
+    annotation_text="P75 Target",
+    annotation_position="top left"
+)
+
+# Add P95 Target Line
+fig_time_perc.add_hline(
+    y=target_p95,
+    line_dash="dash",
+    line_color="purple",
+    annotation_text="P95 Target",
+    annotation_position="top left"
+)
+# Improve legend names
+fig_time_perc.for_each_trace(lambda t: t.update(name = t.name.replace("_LoSHrs", "")))
+
+fig_time_perc.update_xaxes(range=[weekly_percentiles.index.min(), weekly_percentiles.index.max()])
+
+# Prevent auto display
+_ = None
+
+```
+
+```{python}
+#Make NCTR summary table with range of NCTR reductions
+
+# replace NaNs with 0s
+df_sql['nctr_total_days']=df_sql['nctr_total_days'].fillna(0)
+df_sql['adjusted_los']=df_sql['LoSHrs']-(df_sql['nctr_total_days'] * 24.0)
+df_sql['adjusted_los']=np.where(df_sql['adjusted_los']<0, 0, df_sql['adjusted_los'])
+
+# add range of NCTR columns
+df1=df_sql
+nctr_change=[1, 0.9, 0.8, 0.70, 0.6, 0.5, 0.4, 0.3, 0.20, 0.10, 0]
+nctr_change_label=['-100%','-90%', '-80%', '-70%', '-60%', '-50%', '-40%', '-30%','-20%', '-10%', 'No change']
+
+lists_for_summary=[]
+
+# get metrics for each nctr reduction
+for i in range(len(nctr_change)):
+    df1[f'nctr_adjusted {nctr_change_label[i]}']=df1['nctr_total_days']*nctr_change[i]
+    df1[f'adjusted_los {nctr_change_label[i]}']=df1['LoSHrs']-(df1[f'nctr_adjusted {nctr_change_label[i]}'] * 24.0)
+    df1=df1.drop([f'nctr_adjusted {nctr_change_label[i]}'], axis=1)
+    summary_list=distribution_functions.samples_to_summary_list((df1[f'adjusted_los {nctr_change_label[i]}'].tolist()))
+    lists_for_summary.append(summary_list)
+
+
+summary_nctr=distribution_functions.summary_lists_to_table(lists_for_summary)
+summary_cols=nctr_change_label.copy()
+summary_cols.insert(0, "Metric")
+summary_nctr.columns=summary_cols
+#display(summary_nctr)
+```
+
+```{python}
+# which nctr is most similar to the target
+metrics_list=['25 perc','median','75 perc','95 perc']
+summary_nctr1=summary_nctr[summary_nctr['Metric'].isin(metrics_list)]
+summary_nctr1.set_index('Metric', inplace=True)
+
+# Step 1: Subtract the Target LoS series from each column
+diff = summary_nctr1.subtract(summary_table0['Target LoS'], axis=0)
+
+# Step 2: Take the absolute value
+abs_diff = diff.abs()
+
+# Step 3: Sum the absolute differences for each column
+result = abs_diff.sum()
+#display(result)
+min_column = result.idxmin()
+#display(min_column)
+result=pd.DataFrame(result)
+result=result.rename(columns={0:'Absolute difference vs target'})
+result.index.name = 'NCTR Reduction'
+result = result.apply(pd.to_numeric, errors='coerce')
+```
+
+```{python}
+# creates table with real, target and nctr (summary_table1)
+adjusted_los=distribution_functions.samples_to_summary_list((df_sql['adjusted_los'].tolist()))
+
+compare_list=[list_of_summary_lists[0], target_list]
+summary_table1=distribution_functions.summary_lists_to_table(compare_list)
+summary_table1=summary_table1.rename(columns={'LoS Dist -1':'Real LoS'})
+summary_table1=summary_table1.rename(columns={'LoS Dist 0':'Target LoS'})
+summary_table1[min_column] = summary_nctr[min_column]
+summary_table1=summary_table1.rename(columns={f'{min_column}':f'NCTR{min_column}'})
+summary_table1=summary_table1[summary_table1['Metric'].isin(metrics_list)]
+summary_table1.set_index('Metric', inplace=True)
+summary_table1 = summary_table1.apply(pd.to_numeric, errors='coerce')
+#display(summary_table1)
+```
+
+
+## Targets for Inpatient Length of Stay
+
+With a fixed bedbase and a fixed level of demand, inpatient length of stay must be kept below a target level to ensure beds are always available for the next patients to arrive.
+
+For a hospital with a non-elective (NEL) bedbase of **`{python} beds`** and **`{python} demand`** NEL patients needing admission each day, @tbl-actual-target shows the target inpatient length of stay (LoS) needed to avoid any 12-hour LoS breaches in ED. @fig-actual-target shows the difference between the real and target lengths of stay as a box plot. @tbl-actual-target metrics can be used as targets for inpatient length of stay performance monitoring. Note that inpatient length of stay has a skewed distribution, so it can be useful to monitor percentiles in addition to the mean. @fig-timeseries-percentiles shows how the targets can be displayed for performance monitoring.
+
+```{python}
+#| label: tbl-actual-target
+#| tbl-cap: "Shows summary metrics for actual LoS and target LoS."
+summary_table0.round(1)
+```
+
+
+```{python}
+#| label: fig-actual-target
+#| fig-cap: "An boxplot of real and target length of stay distributions. The target boxplot has been created by random sampling from the target distribution."
+compare_box.show()
+```
+
+```{python}
+#| label: fig-timeseries-percentiles
+#| fig-cap: "A timeseries of real LoS data percentiles vs the target percentiles"
+fig_time_perc.show()
+```
+
+## NCTR
+
+Acheiving the target inpatient length of stay through NCTR reduction alone would require an approximately `{python} min_column` reduction in NCTR lengths of stay (based on our real NCTR data for FY24/25). The real system is much more complex than the model so the real reduction in NCTR would need to be **greater** than `{python} min_column` to acheive the same result.
+
+## Materials and Methods
+### Dataset
+Real length of stay figures are based on patients discharged during FY24/25.
+
+### Details on how the target inpatient length of stay was calculated
+
+The model was run lots of times. Demand and number of beds was kept constant and length of stay was increased incrementally and the model run again after each increase and the number of 12hr breaches were counted. The target length of stay is just below where 12hr breaches start to occur (see @fig-calculate-target). It is the maximum inpatient length of stay the system can tolerate before breaches occur in ED. Note that the real system is much more complex than the model system and we can therefore assume length of stay must be decreased even further in the real system.
+
+```{python}
+#| label: fig-calculate-target
+#| fig-cap: "Number of 12hr LoS Breaches which result from altering inpatient length of stay while keeping beds and demand the same. Dotted lines show real and target lengths of stay respectively."
+fig.show()
+```
+
+
+### Calculating NCTR reduction
+
+The reduction in NCTR required to meet the target was calculated by calculating length of stay for a range of NCTR reductions and calculating which of the NCTR reductions produced lengths of stay closest to the target. Note on how this has been calculated: if an individual patient has a NCTR time of 100 hrs, with a 50% reduction their NCTR time would be 50hrs.
+
+```{python}
+#| label: tbl-nctr-range
+#| tbl-cap: "Shows how inpatient LoS changes over a range of NCTR reductions."
+summary_nctr1
+```
+
+@tbl-abs-diff shows how closely each NCTR reduction matches the target inpatient LoS, by summing the absolute differences across quartiles. @tbl-nctr-target-comparison shows the NCTR reduction most similar to the target.
+
+```{python}
+#| label: tbl-abs-diff
+#| tbl-cap: "Absolute differences between target inpatient LoS and different NCTR reductions, to find the NCTR reduction that most closely matches the target."
+result.round(1)
+```
+
+```{python}
+#| label: tbl-nctr-target-comparison
+#| tbl-cap: "Shows how similar the modelled target is to the selected NCTR reduction."
+summary_table1.round(1)
+```
+
+```{python}
+#| label: fig-nctr-target-boxplot
+#| fig-cap: "Shows target NCTR reduction compared to real and target."
+compare_box_nctr = compare_box
+compare_box_nctr.add_trace(go.Box(y=df1[f'adjusted_los {min_column}'], name=f'NCTR{min_column}', boxpoints=False))
+compare_box_nctr.show()
+```
