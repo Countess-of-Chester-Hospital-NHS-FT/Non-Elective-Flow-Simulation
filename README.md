@@ -28,7 +28,7 @@ Note: Only simulated data are shared in this repository
 * **environment** This folder contains a .yml for recreating a conda environment and also requirements.in / requirements.txt files for using venv or other package managers. There is also another requirements.txt file in the app folder which is required for deployment on Streamlit Community cloud. For notes on use of environment files see [here](https://github.com/Countess-of-Chester-Hospital-NHS-FT/Python-Environment-Notes)
 
 ### Contributing
-Contributions and identification of issues are welcomed.
+Contributions and identification of issues are welcomed. Feel free to raise an issue or post discussions.
 
 1. Fork the Project
 2. Create your Feature Branch (`git checkout -b feature/Feature`)
