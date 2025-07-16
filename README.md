@@ -38,4 +38,4 @@ Contributions and identification of issues are welcomed.
 
 ### Acknowledgements
 * This project was supported by the [HSMA programme](https://hsma.co.uk/)
-* Particular thanks to @Bergam0t for developing the Vidigi animation package and help with resolving various issues.
+* Particular thanks to [Sammi Rosser](https://github.com/Bergam0t) for developing the Vidigi animation package and help with resolving various issues.
