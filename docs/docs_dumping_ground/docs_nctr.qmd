@@ -249,7 +249,7 @@ mode=16
 traces=20
 mean_list, std_list = distribution_functions.make_lognormal_lists(mode, traces)
 
-fig_list, list_of_summary_lists=distribution_functions.hist_compare_real_model(df1['LoSHrs'], "Unadjusted", mean_list, std_list, 5)
+fig_list, list_of_summary_lists, box_list=distribution_functions.hist_compare_real_model(df1['LoSHrs'], "Unadjusted", mean_list, std_list, 5)
 
 fig_list[11]
 ```
@@ -292,7 +292,7 @@ mode=16
 traces=20
 mean_list, std_list = distribution_functions.make_lognormal_lists(mode, traces)
 
-fig_list, list_of_summary_lists=distribution_functions.hist_compare_real_model(df1['adjusted_los -100%'], "-100%", mean_list, std_list, 5)
+fig_list, list_of_summary_lists, box_list=distribution_functions.hist_compare_real_model(df1['adjusted_los -100%'], "-100%", mean_list, std_list, 5)
 
 fig_list[6]
 ```

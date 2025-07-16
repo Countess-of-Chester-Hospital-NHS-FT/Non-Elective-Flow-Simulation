@@ -9,6 +9,7 @@ format:
 #| label: library-imports
 import pandas as pd
 import numpy as np
+import pyodbc
 import sys
 import os
 root_dir = os.path.abspath(os.path.join(os.getcwd(), '..'))
@@ -30,7 +31,25 @@ from IPython.display import display
 ## This is our real LoS distribution 
 
 ```{python}
-csv = pd.read_csv("../data/los_fy2425.csv")
+#csv = pd.read_csv("../data/los_fy2425.csv")
+# import data
+dsn = "coch_p2" 
+
+read_connection = pyodbc.connect(f'DSN={dsn}', autocommit=True)
+
+sql_query = """
+select
+	ENCNTR_ID
+	,MinWardStart
+	,MaxWardEnd
+	,LoSHrs
+	,nctr_total_days
+from InformationSandpitDB.Reports.pbi_FlowSimulation_NCTR
+where MaxWardEnd between '20240401' and '20250401'
+"""
+df_sql = pd.read_sql_query(sql_query, read_connection)
+read_connection.close()
+
 binsize = [5, 24]
 colours='#636EFA'
 
@@ -39,7 +58,7 @@ fig = make_subplots(rows=2, cols=1, subplot_titles=[f'Binsize: {binsize[0]} hrs'
 
 for i in range(len(binsize)):
     hist = go.Histogram(
-        x=csv['LoSHrs'],
+        x=df_sql['LoSHrs'],
         #name=f'Real {binsize[i]} hrs',
         xbins=dict(start=0, end=2000, size=binsize[i]),
         marker_color=colours
@@ -68,7 +87,7 @@ for annotation in fig['layout']['annotations']:
 
 fig.show()
 
-summary=distribution_functions.samples_to_summary_list(csv['LoSHrs'])
+summary=distribution_functions.samples_to_summary_list(df_sql['LoSHrs'])
 summary=[summary]
 summary_table=distribution_functions.summary_lists_to_table(summary)
 summary_table=summary_table.rename(columns={'LoS Dist -1':'Real LoS'})
@@ -456,12 +475,12 @@ fig.show()
 ```{python}
 mean = summary_table.loc['mean', 'Real LoS']
 std = summary_table.loc['std', 'Real LoS']
-fig_list1, list_of_summary_lists1=distribution_functions.hist_compare_real_model("../data/los_fy2425.csv", mean, std, 5)
+fig_list1, list_of_summary_lists1, box_list1=distribution_functions.hist_compare_real_model(df_sql['LoSHrs'], "Current LoS Hrs", mean, std, 5)
 fig1=fig_list1[0]
 
 mode=16
 mean_list, std_list = distribution_functions.make_lognormal_lists(mode, 20)
-fig_list2, list_of_summary_lists2=distribution_functions.hist_compare_real_model("../data/los_fy2425.csv", mean_list, std_list, 5)
+fig_list2, list_of_summary_lists2, box_list2=distribution_functions.hist_compare_real_model(df_sql['LoSHrs'], "Current LoS Hrs", mean_list, std_list, 5)
 fig2=fig_list2[10]
 
 # This cell makes a combined plot of 2 modelling attempts
