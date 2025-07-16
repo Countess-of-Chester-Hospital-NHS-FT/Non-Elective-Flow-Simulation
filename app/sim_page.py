@@ -23,7 +23,7 @@ if 'animation' not in st.session_state:
     st.session_state['animation'] = []
 
 st.title("Non-Elective Flow Virtual Hospital")
-st.header("(work in progress)")
+st.header("(v0.0.0)")
 
 # set range of values for los slider
 mean_time_in_bed_list = [138.7382025354152,
