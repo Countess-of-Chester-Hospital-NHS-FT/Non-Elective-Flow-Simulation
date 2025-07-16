@@ -1,23 +1,41 @@
 # Non-Elective-Flow-Simulation
 
-### Problem: 
-Poor patient flow is leading to long waits for admission in ED. This leads to poor performance against all the key ED wait metrics for the hospital and more importantly, there is evidence that long waits for admission in ED are associated with poorer outcomes for patients.
-### Management strategies: 
-The two main strategies employed to tackle this problem is increasing the number of beds (by creation of escalation beds) and trying to decrease discharge delays (reducing length of stay). Additionally we have a Same Day Emergency Care (SDEC) facility and it is unclear how the number of people admitted through this facility impacts the waits of those in ED.
-### Key questions:
+### Status
+The first iteration of this project is complete and being maintained. This is a proof of concept model and may be developed further in future.
+
+### About the project
+#### Problem: 
+Long waits for admission in ED are an issue at many acute trusts and can lead to poorer outcomes for patients. Lack of available beds are often a driver of long waiting times.
+#### Management strategies: 
+The strategies employed to tackle this problem are increasing the number of beds (by creation of escalation beds), trying to decrease discharge delays (reducing length of stay) or trying to reduce demand for admission. 
+#### Key questions:
 * Given x beds, how far does admitted length of stay have to reduce to meet particular waiting time targets for those queuing in ED? (Evidence based target)
-* If we open 15 beds but keep admitted length of stay the same, what is the impact on ED waiting times and the various targets? (Evidence for a particular management strategy)
-* What is the optimum number of people to stream from ED to SDEC to minimise ED waits? (Evidence for a particular management strategy)
-### Outputs:
-I plan to create DES model(s), using the methods taught on the HSMA, that are able to provide evidence for the questions above. I would  also hope to create a friendly user interface that my stakeholders could use to try out scenarios and help understand how the model works.
+* Given a starting scenario, if we open 15 beds but keep admitted length of stay the same, what is the impact on ED waiting times and the various targets? (Evidence for a particular management strategy)
+* What is the maximum demand that can be sustained without queues occuring, given a fixed bed base and length of stay.
+#### Outputs:
+This repo contains a Discrete Event Simulation (DES) model (app/model.py), a user friendly streamlit app front-end (app) and a series of Quarto reports (docs). 
 
-# Structure of the repo
+### References
+* The app is published on [Streamlit Community Cloud](https://non-elective-flow-simulation-coch.streamlit.app/).
+* This project was completed as part of the [HSMA Programme](https://hsma.co.uk/previous_projects/hsma_6/H6_6001_DES_modelling_non_elective_flow/index.html)
 
-## app
-This folder contains the code required to run the model as an app (with model classes and outputs separated into separate scripts), run launch.py to run the app. On main branch the model code for the app and in model_script should always be the same.
+Note: Only simulated data are shared in this repository
 
-## output_analysis
-This script runs the model without having to run the app, to make it easy to work on the model.
+### Project Structure
 
-## environment
-The environment required to run the model / app.
+* **app**  This folder contains the code required to run the model as an app and deploy on Streamlit Community Cloud, run launch.py to run the app. **Model.py** contains the model code.
+* **docs** This folder contains quarto documents which describe how the model handles length of stay and reneging behaviours, and also some quarto documents which describe model findings (results). Some of these documents use real system data so if running in an external organisation you will need to change the data source.
+* **environment** This folder contains a .yml for recreating a conda environment and also requirements.in / requirements.txt files for using venv or other package managers. There is also another requirements.txt file in the app folder which is required for deployment on Streamlit Community cloud. For notes on use of environment files see [here](https://github.com/Countess-of-Chester-Hospital-NHS-FT/Python-Environment-Notes)
+
+### Contributing
+Contributions and identification of issues are welcomed.
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/Feature`)
+3. Commit your Changes (`git commit -m 'Add some Feature'`)
+4. Push to the Branch (`git push origin feature/Feature`)
+5. Open a Pull Request
+
+### Acknowledgements
+* This project was supported by the [HSMA programme](https://hsma.co.uk/)
+* Particular thanks to @Bergam0t for developing the Vidigi animation package and help with resolving various issues.
